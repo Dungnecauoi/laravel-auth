@@ -13,6 +13,7 @@ use Duxbo\LaravelAuth\Models\Permission;
 use Duxbo\LaravelAuth\Models\Role;
 use Duxbo\LaravelAuth\Policies\PermissionPolicy;
 use Duxbo\LaravelAuth\Policies\RolePolicy;
+use Duxbo\LaravelAuth\Policies\UserPolicy;
 
 class LaravelAuthServiceProvider extends ServiceProvider
 {
@@ -97,6 +98,10 @@ class LaravelAuthServiceProvider extends ServiceProvider
                 $this->loadRoutesFrom($file);
             }
         }
+
+        if (config('laravel-auth.features.admin_ui')) {
+            $this->loadRoutesFrom(__DIR__.'/../routes/admin.php');
+        }
     }
 
     /**
@@ -130,6 +135,7 @@ class LaravelAuthServiceProvider extends ServiceProvider
     {
         Gate::policy(Role::class, RolePolicy::class);
         Gate::policy(Permission::class, PermissionPolicy::class);
+        Gate::policy(config('laravel-auth.user_model'), UserPolicy::class);
     }
 
     protected function registerAuditLog(): void

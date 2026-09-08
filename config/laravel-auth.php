@@ -84,6 +84,11 @@ return [
         'audit_log'           => env('LARAVEL_AUTH_AUDIT_LOG', true),
         'session_management'  => env('LARAVEL_AUTH_SESSIONS', true),
         'impersonation'       => env('LARAVEL_AUTH_IMPERSONATION', false),
+
+        // The /admin Users/Roles/Permissions management UI. Always Blade,
+        // regardless of `frontend` — a staff back-office and an API/Inertia
+        // frontend for end users aren't mutually exclusive.
+        'admin_ui'            => env('LARAVEL_AUTH_ADMIN_UI', true),
     ],
 
     /*

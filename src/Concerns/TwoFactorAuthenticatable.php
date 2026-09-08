@@ -99,6 +99,29 @@ trait TwoFactorAuthenticatable
         );
     }
 
+    public function twoFactorQrCodeSvg(): string
+    {
+        if (! class_exists(\BaconQrCode\Renderer\ImageRenderer::class)) {
+            throw new \RuntimeException(
+                'Rendering a two-factor QR code requires "bacon/bacon-qr-code". Run: composer require bacon/bacon-qr-code'
+            );
+        }
+
+        $renderer = new \BaconQrCode\Renderer\ImageRenderer(
+            new \BaconQrCode\Renderer\RendererStyle\RendererStyle(192),
+            new \BaconQrCode\Renderer\Image\SvgImageBackEnd()
+        );
+
+        return (new \BaconQrCode\Writer($renderer))->writeString($this->twoFactorQrCodeUrl());
+    }
+
+    public function regenerateRecoveryCodes(): void
+    {
+        $this->forceFill([
+            'two_factor_recovery_codes' => Crypt::encryptString(json_encode($this->generateRecoveryCodes())),
+        ])->save();
+    }
+
     protected function generateRecoveryCodes(): array
     {
         return collect(range(1, 8))
