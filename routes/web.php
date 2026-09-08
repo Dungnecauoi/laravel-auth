@@ -1,0 +1,54 @@
+<?php
+
+use Illuminate\Support\Facades\Route;
+use Duxbo\LaravelAuth\Http\Controllers\Web\AuthenticatedSessionController;
+use Duxbo\LaravelAuth\Http\Controllers\Web\EmailVerificationNotificationController;
+use Duxbo\LaravelAuth\Http\Controllers\Web\EmailVerificationPromptController;
+use Duxbo\LaravelAuth\Http\Controllers\Web\NewPasswordController;
+use Duxbo\LaravelAuth\Http\Controllers\Web\PasswordResetLinkController;
+use Duxbo\LaravelAuth\Http\Controllers\Web\RegisteredUserController;
+use Duxbo\LaravelAuth\Http\Controllers\Web\TwoFactorChallengeController;
+use Duxbo\LaravelAuth\Http\Controllers\Web\VerifyEmailController;
+
+// Route names deliberately match Laravel's own conventions (login, register,
+// password.*, verification.*) so the framework's defaults (e.g. the guest
+// middleware's redirect, Authenticate::redirectTo) and any Blade `route()`
+// call already written against them keep working unmodified. Every route
+// here can be overridden by simply defining the same name in your own
+// routes file loaded after this package's provider.
+
+Route::middleware('guest')->group(function () {
+    if (config('laravel-auth.features.registration')) {
+        Route::get('register', [RegisteredUserController::class, 'create'])->name('register');
+        Route::post('register', [RegisteredUserController::class, 'store']);
+    }
+
+    Route::get('login', [AuthenticatedSessionController::class, 'create'])->name('login');
+    Route::post('login', [AuthenticatedSessionController::class, 'store']);
+
+    if (config('laravel-auth.features.two_factor')) {
+        Route::get('two-factor-challenge', [TwoFactorChallengeController::class, 'create'])->name('two-factor.challenge');
+        Route::post('two-factor-challenge', [TwoFactorChallengeController::class, 'store']);
+    }
+
+    if (config('laravel-auth.features.password_reset')) {
+        Route::get('forgot-password', [PasswordResetLinkController::class, 'create'])->name('password.request');
+        Route::post('forgot-password', [PasswordResetLinkController::class, 'store'])->name('password.email');
+        Route::get('reset-password/{token}', [NewPasswordController::class, 'create'])->name('password.reset');
+        Route::post('reset-password', [NewPasswordController::class, 'store'])->name('password.store');
+    }
+});
+
+Route::middleware('auth')->group(function () {
+    Route::post('logout', [AuthenticatedSessionController::class, 'destroy'])->name('logout');
+
+    if (config('laravel-auth.features.email_verification')) {
+        Route::get('verify-email', EmailVerificationPromptController::class)->name('verification.notice');
+        Route::get('verify-email/{id}/{hash}', VerifyEmailController::class)
+            ->middleware('signed')
+            ->name('verification.verify');
+        Route::post('email/verification-notification', [EmailVerificationNotificationController::class, 'store'])
+            ->middleware('throttle:6,1')
+            ->name('verification.send');
+    }
+});

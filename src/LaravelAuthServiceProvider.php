@@ -1,0 +1,139 @@
+<?php
+
+namespace Duxbo\LaravelAuth;
+
+use Illuminate\Support\Facades\Event;
+use Illuminate\Support\Facades\Gate;
+use Illuminate\Support\ServiceProvider;
+use Duxbo\LaravelAuth\Console\Commands\InstallCommand;
+use Duxbo\LaravelAuth\Console\Commands\SyncRoutePermissionsCommand;
+use Duxbo\LaravelAuth\Listeners\AuditAuthEvents;
+use Duxbo\LaravelAuth\Models\Permission;
+use Duxbo\LaravelAuth\Models\Role;
+use Duxbo\LaravelAuth\Policies\PermissionPolicy;
+use Duxbo\LaravelAuth\Policies\RolePolicy;
+
+class LaravelAuthServiceProvider extends ServiceProvider
+{
+    public function register(): void
+    {
+        $this->mergeConfigFrom(__DIR__.'/../config/laravel-auth.php', 'laravel-auth');
+    }
+
+    public function boot(): void
+    {
+        $this->loadMigrationsFrom(__DIR__.'/../database/migrations');
+        $this->loadViewsFrom(__DIR__.'/../resources/views', 'laravel-auth');
+        $this->loadTranslationsFrom(__DIR__.'/../resources/lang', 'laravel-auth');
+        $this->loadRoutesFrom_ForFlavor();
+
+        $this->registerGateIntegration();
+        $this->registerPolicies();
+        $this->registerAuditLog();
+
+        if ($this->app->runningInConsole()) {
+            $this->commands([
+                InstallCommand::class,
+                SyncRoutePermissionsCommand::class,
+            ]);
+
+            $this->publishes([
+                __DIR__.'/../config/laravel-auth.php' => config_path('laravel-auth.php'),
+            ], 'laravel-auth-config');
+
+            $this->publishesMigrations([
+                __DIR__.'/../database/migrations' => database_path('migrations'),
+            ], 'laravel-auth-migrations');
+
+            $this->publishes([
+                __DIR__.'/../resources/views' => resource_path('views/vendor/laravel-auth'),
+            ], 'laravel-auth-views');
+
+            $this->publishes([
+                __DIR__.'/../resources/lang' => $this->app->langPath('vendor/laravel-auth'),
+            ], 'laravel-auth-lang');
+        }
+    }
+
+    /**
+     * Which route file(s) get registered depends on config('laravel-auth.frontend'):
+     * "blade"/"api"/"inertia" load only their own file. "hybrid" is shorthand
+     * for "blade,api" (a normal website plus a token API for e.g. a mobile
+     * app) — any other comma-separated combination works too, EXCEPT
+     * "blade,inertia" together: both would register the same page URIs
+     * (login, register, ...) and silently shadow one another, since a
+     * browser page is either server-rendered or an SPA shell, never both.
+     */
+    protected function loadRoutesFor(): array
+    {
+        $flavor = config('laravel-auth.frontend', 'blade');
+
+        $flavors = $flavor === 'hybrid' ? ['blade', 'api'] : explode(',', $flavor);
+
+        return collect($flavors)
+            ->map(fn ($f) => trim($f) === 'blade' ? 'web' : trim($f))
+            ->filter()
+            ->unique()
+            ->values()
+            ->all();
+    }
+
+    protected function loadRoutesFrom_ForFlavor(): void
+    {
+        foreach ($this->loadRoutesFor() as $flavor) {
+            $file = __DIR__."/../routes/{$flavor}.php";
+
+            if ($flavor === 'inertia' && ! class_exists(\Inertia\Inertia::class)) {
+                continue; // avoid hard dependency on inertiajs/inertia-laravel
+            }
+
+            if (file_exists($file)) {
+                // Deliberately no name/prefix group: routes keep Laravel's own
+                // conventional names (login, register, password.reset, ...)
+                // so `route('login')`, the default Authenticate middleware,
+                // and any other package that assumes those names keep working.
+                $this->loadRoutesFrom($file);
+            }
+        }
+    }
+
+    /**
+     * Single integration point with Laravel's native Gate: `$user->can()`,
+     * `@can`, `Gate::authorize()` and the `can:` middleware all funnel
+     * through Gate::before, so no custom middleware is required for
+     * permission checks — only the standard Laravel authorization flow.
+     */
+    protected function registerGateIntegration(): void
+    {
+        Gate::before(function ($user, string $ability) {
+            if (! method_exists($user, 'hasRole')) {
+                return null;
+            }
+
+            foreach ((array) config('laravel-auth.permissions.super_admin_roles', []) as $role) {
+                if ($role && $user->hasRole($role)) {
+                    return true;
+                }
+            }
+
+            if (method_exists($user, 'hasPermission') && $user->hasPermission($ability)) {
+                return true;
+            }
+
+            return null;
+        });
+    }
+
+    protected function registerPolicies(): void
+    {
+        Gate::policy(Role::class, RolePolicy::class);
+        Gate::policy(Permission::class, PermissionPolicy::class);
+    }
+
+    protected function registerAuditLog(): void
+    {
+        if (config('laravel-auth.features.audit_log')) {
+            Event::subscribe(AuditAuthEvents::class);
+        }
+    }
+}

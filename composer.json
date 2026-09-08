@@ -1,0 +1,43 @@
+{
+    "name": "duxbo/laravel-auth",
+    "description": "Full user management, fine-grained per-route permissions, and complete auth flows for Laravel — works with Blade, API and Inertia.",
+    "type": "library",
+    "license": "MIT",
+    "require": {
+        "php": "^8.2",
+        "illuminate/support": "^10.0|^11.0|^12.0",
+        "illuminate/auth": "^10.0|^11.0|^12.0",
+        "illuminate/database": "^10.0|^11.0|^12.0",
+        "laravel/sanctum": "^4.0"
+    },
+    "suggest": {
+        "pragmarx/google2fa": "Required to enable two-factor authentication (features.two_factor).",
+        "bacon/bacon-qr-code": "Required to render the two-factor authentication QR code.",
+        "laravel/socialite": "Required to enable social login (features.social_login).",
+        "inertiajs/inertia-laravel": "Required when using the 'inertia' or 'hybrid' frontend flavor."
+    },
+    "require-dev": {
+        "orchestra/testbench": "^8.0|^9.0|^10.0",
+        "pestphp/pest": "^2.0|^3.0"
+    },
+    "autoload": {
+        "psr-4": {
+            "Duxbo\\LaravelAuth\\": "src/",
+            "Duxbo\\LaravelAuth\\Database\\Factories\\": "database/factories/"
+        }
+    },
+    "autoload-dev": {
+        "psr-4": {
+            "Duxbo\\LaravelAuth\\Tests\\": "tests/"
+        }
+    },
+    "extra": {
+        "laravel": {
+            "providers": [
+                "Duxbo\\LaravelAuth\\LaravelAuthServiceProvider"
+            ]
+        }
+    },
+    "minimum-stability": "stable",
+    "prefer-stable": true
+}
