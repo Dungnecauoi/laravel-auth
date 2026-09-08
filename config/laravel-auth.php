@@ -8,11 +8,26 @@ return [
     |--------------------------------------------------------------------------
     |
     | Which delivery channel(s) load routes/controllers for the auth flows:
-    | "blade", "api", "inertia" or "hybrid" (blade + api + inertia all at once).
-    | Every flavor calls the same Actions classes, only the response differs.
+    | "blade", "api", "inertia" or "hybrid" (blade + api together). Set by
+    | `php artisan laravel-auth:install` when you pick a UI stack (blade,
+    | inertia-react, inertia-vue, headless). Every flavor calls the same
+    | Actions classes, only the response differs.
     |
     */
     'frontend' => env('LARAVEL_AUTH_FRONTEND', 'blade'),
+
+    /*
+    |--------------------------------------------------------------------------
+    | Inertia stack
+    |--------------------------------------------------------------------------
+    |
+    | Only meaningful when frontend is "inertia"/"hybrid" — informational
+    | for now (react|vue), since the page components for each stack are a
+    | separate starter kit still to come; the routes/controllers already
+    | work with either.
+    |
+    */
+    'inertia_stack' => env('LARAVEL_AUTH_INERTIA_STACK', 'react'),
 
     /*
     |--------------------------------------------------------------------------

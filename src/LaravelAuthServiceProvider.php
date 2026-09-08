@@ -7,6 +7,7 @@ use Illuminate\Support\Facades\Gate;
 use Illuminate\Support\ServiceProvider;
 use Duxbo\LaravelAuth\Console\Commands\InstallCommand;
 use Duxbo\LaravelAuth\Console\Commands\SyncRoutePermissionsCommand;
+use Duxbo\LaravelAuth\Console\Commands\UninstallCommand;
 use Duxbo\LaravelAuth\Listeners\AuditAuthEvents;
 use Duxbo\LaravelAuth\Models\Permission;
 use Duxbo\LaravelAuth\Models\Role;
@@ -34,6 +35,7 @@ class LaravelAuthServiceProvider extends ServiceProvider
         if ($this->app->runningInConsole()) {
             $this->commands([
                 InstallCommand::class,
+                UninstallCommand::class,
                 SyncRoutePermissionsCommand::class,
             ]);
 

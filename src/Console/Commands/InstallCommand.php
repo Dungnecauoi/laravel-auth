@@ -9,13 +9,15 @@ use Illuminate\Support\Str;
 class InstallCommand extends Command
 {
     protected $signature = 'laravel-auth:install
-                            {--frontend= : blade, api, inertia or hybrid}
+                            {--stack= : blade, inertia-react, inertia-vue or headless}
                             {--admin-email= : Seed a first super-admin user}
                             {--admin-password=}
                             {--admin-name=}
                             {--force : Run non-interactively, accepting defaults / skipping prompts}';
 
-    protected $description = 'Install laravel-auth: publish config, migrate, sync route permissions, seed the first admin';
+    protected $description = 'Install laravel-auth: pick a UI stack, publish config/views, migrate, sync route permissions, seed the first admin';
+
+    protected const STACKS = ['blade', 'inertia-react', 'inertia-vue', 'headless'];
 
     public function handle(): int
     {
@@ -23,7 +25,7 @@ class InstallCommand extends Command
 
         $this->call('vendor:publish', ['--tag' => 'laravel-auth-config']);
 
-        $this->selectFrontend();
+        $stack = $this->selectStack();
 
         $this->components->task('Running migrations', fn () => $this->call('migrate') === 0);
 
@@ -34,34 +36,73 @@ class InstallCommand extends Command
 
         $this->seedAdmin();
 
-        $this->components->info('laravel-auth installed. Next steps:');
-        $this->components->bulletList([
-            'Add the HasRoles and HasPermissions traits (and TwoFactorAuthenticatable if enabled) to your User model.',
-            'Review config/laravel-auth.php for feature toggles.',
-            in_array(config('laravel-auth.frontend'), ['inertia', 'hybrid'], true)
-                ? 'Run npm install && npm run build for the Inertia frontend.'
-                : 'Publish views with: php artisan vendor:publish --tag=laravel-auth-views',
-        ]);
+        $this->printNextSteps($stack);
 
         return self::SUCCESS;
     }
 
-    protected function selectFrontend(): void
+    /**
+     * Mirrors the Breeze/Jetstream-style "which stack?" prompt. Only "blade"
+     * and "headless" (API-only) are fully scaffolded today — inertia-react
+     * and inertia-vue wire up the routing/config but still need their page
+     * components built (a starter kit for each is planned).
+     */
+    protected function selectStack(): string
     {
-        $frontend = $this->option('frontend');
+        $stack = $this->option('stack');
 
-        if (! $frontend && ! $this->option('force')) {
-            $frontend = $this->choice(
-                'Which frontend flavor should laravel-auth use?',
-                ['blade', 'api', 'inertia', 'hybrid'],
-                0
-            );
+        if (! $stack && ! $this->option('force')) {
+            $stack = $this->choice('Which UI stack should laravel-auth use?', self::STACKS, 0);
         }
 
-        if ($frontend) {
-            $this->setEnvValue('LARAVEL_AUTH_FRONTEND', $frontend);
-            $this->components->info("Frontend flavor set to [{$frontend}] in .env");
+        $stack = $stack ?: 'blade';
+
+        if (! in_array($stack, self::STACKS, true)) {
+            $this->components->error("Unknown stack [{$stack}]. Expected one of: ".implode(', ', self::STACKS));
+            $stack = 'blade';
         }
+
+        $frontend = match ($stack) {
+            'inertia-react', 'inertia-vue' => 'inertia',
+            'headless' => 'api',
+            default => 'blade',
+        };
+
+        $this->setEnvValue('LARAVEL_AUTH_FRONTEND', $frontend);
+
+        if (str_starts_with($stack, 'inertia-')) {
+            $this->setEnvValue('LARAVEL_AUTH_INERTIA_STACK', Str::after($stack, 'inertia-'));
+        }
+
+        $this->components->info("Stack set to [{$stack}] (LARAVEL_AUTH_FRONTEND={$frontend} in .env)");
+
+        if ($stack === 'blade') {
+            // "Render the views out" immediately — a Blade stack means real,
+            // editable files under resources/views, not just whatever the
+            // package quietly loads from vendor/ via loadViewsFrom().
+            $this->call('vendor:publish', ['--tag' => 'laravel-auth-views', '--force' => true]);
+        }
+
+        return $stack;
+    }
+
+    protected function printNextSteps(string $stack): void
+    {
+        $steps = [
+            'Add the HasRoles and HasPermissions traits (and TwoFactorAuthenticatable if enabled) to your User model.',
+            'Review config/laravel-auth.php for feature toggles.',
+        ];
+
+        $steps[] = match ($stack) {
+            'blade' => 'Blade views were published to resources/views/vendor/laravel-auth — edit them directly.',
+            'inertia-react', 'inertia-vue' => 'Inertia routes/controllers are wired up, but the '
+                .($stack === 'inertia-react' ? 'React' : 'Vue')
+                .' page components (Auth/Login, Auth/Register, ...) aren\'t scaffolded yet — a starter kit for this stack is coming; build them yourself against routes/inertia.php in the meantime.',
+            'headless' => 'No views to worry about — /api/login, /api/register etc. return JSON. Point your SPA/mobile client at them.',
+        };
+
+        $this->components->info('laravel-auth installed. Next steps:');
+        $this->components->bulletList($steps);
     }
 
     protected function seedAdmin(): void
