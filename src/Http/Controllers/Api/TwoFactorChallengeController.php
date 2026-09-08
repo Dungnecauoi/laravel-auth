@@ -5,11 +5,12 @@ namespace Duxbo\LaravelAuth\Http\Controllers\Api;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Crypt;
+use Duxbo\LaravelAuth\Actions\EnforceSingleSession;
 use Duxbo\LaravelAuth\Http\Resources\UserResource;
 
 class TwoFactorChallengeController
 {
-    public function store(Request $request): JsonResponse
+    public function store(Request $request, EnforceSingleSession $singleSession): JsonResponse
     {
         $request->validate(['login_token' => ['required']]);
 
@@ -30,6 +31,7 @@ class TwoFactorChallengeController
 
         abort_unless($valid, 422, __('laravel-auth::laravel-auth.two_factor_invalid'));
 
+        $singleSession->forUser($user);
         $token = $user->createToken($request->userAgent() ?? 'api')->plainTextToken;
 
         return response()->json([

@@ -89,6 +89,30 @@ return [
         // regardless of `frontend` — a staff back-office and an API/Inertia
         // frontend for end users aren't mutually exclusive.
         'admin_ui'            => env('LARAVEL_AUTH_ADMIN_UI', true),
+
+        // Only one active login per user at a time, across every channel:
+        // a fresh login revokes every other session row AND every other
+        // Sanctum token for that user. See Actions/EnforceSingleSession.
+        'single_session'      => env('LARAVEL_AUTH_SINGLE_SESSION', false),
+    ],
+
+    /*
+    |--------------------------------------------------------------------------
+    | Default admin account
+    |--------------------------------------------------------------------------
+    |
+    | Set LARAVEL_AUTH_ADMIN_EMAIL (+ password) and this account is created
+    | — or updated to have the super-admin role — by:
+    |   php artisan db:seed --class="Duxbo\LaravelAuth\Database\Seeders\AdminUserSeeder"
+    | `laravel-auth:install` calls this too, so it works non-interactively
+    | (CI, `composer run setup`, ...) with no TTY prompt at all. Leaving
+    | email blank means no admin is seeded and nothing runs.
+    |
+    */
+    'admin' => [
+        'email' => env('LARAVEL_AUTH_ADMIN_EMAIL'),
+        'password' => env('LARAVEL_AUTH_ADMIN_PASSWORD'),
+        'name' => env('LARAVEL_AUTH_ADMIN_NAME', 'Administrator'),
     ],
 
     /*

@@ -17,6 +17,22 @@ The install command asks which UI stack to use (**blade**, **inertia-react**, **
 
 To reverse it: `php artisan laravel-auth:uninstall` rolls back only this package's own migrations (scoped by path, never touches unrelated ones in the same batch) and, with `--purge`, also deletes published config/views/lang.
 
+### Default admin account (no TTY needed)
+
+Set these in `.env` and the admin account is ready after a plain, non-interactive `migrate` + seed — useful for CI/deploy pipelines where `laravel-auth:install`'s prompts aren't an option:
+
+```env
+LARAVEL_AUTH_ADMIN_EMAIL=admin@example.com
+LARAVEL_AUTH_ADMIN_PASSWORD=change-me
+LARAVEL_AUTH_ADMIN_NAME="Administrator"
+```
+
+```bash
+php artisan db:seed --class="Duxbo\LaravelAuth\Database\Seeders\AdminUserSeeder"
+```
+
+It's idempotent (`firstOrCreate` on email) and assigns the configured `permissions.super_admin_roles`. `laravel-auth:install` calls the same seeder, so both paths behave identically. Leave `LARAVEL_AUTH_ADMIN_EMAIL` empty and nothing is seeded.
+
 ## How it works
 
 - **No custom User model.** Add the provided traits to your own `App\Models\User`: `HasRoles`, `HasPermissions`, and `TwoFactorAuthenticatable` (if 2FA is enabled).
@@ -34,9 +50,12 @@ php artisan vendor:publish --tag=laravel-auth-lang
 ## Features
 
 - Registration, login/logout, password reset, email verification
-- Optional two-factor authentication (requires `pragmarx/google2fa`)
+- Profile page: update name/email, change password, delete account (behind Laravel's native `password.confirm` middleware)
+- Two-factor authentication: enable/QR/confirm/disable/recovery codes (requires `pragmarx/google2fa` + `bacon/bacon-qr-code`)
+- Session management: list & revoke active sessions (requires the `database` session driver)
+- `features.single_session`: a fresh login revokes every other session row *and* Sanctum token for that user, across every channel at once
+- Admin UI at `/admin` for Users, Roles, and Permissions — CRUD, role/permission assignment, authorized entirely via `can:` route middleware
 - Optional social login (requires `laravel/socialite`)
-- Role & permission management (`Role`, `Permission` models, many-to-many with your User model)
 - `php artisan laravel-auth:sync-permissions` scans routes for `can:`/`permission:` middleware and flags routes missing one
 - Audit log of auth events, driven entirely by Laravel's built-in auth events (`Login`, `Logout`, `Failed`, `Registered`, `PasswordReset`, `Verified`)
 - Sanctum-backed API tokens and SPA cookie auth
@@ -44,12 +63,14 @@ php artisan vendor:publish --tag=laravel-auth-lang
 ## Example: route-level permissions
 
 ```php
-Route::middleware(['auth', 'role:admin'])->group(function () {
+Route::middleware('auth')->group(function () {
     Route::post('setup/shipping-gateway-save', [ShippingGatewayController::class, 'save'])
         ->name('setup.shipping_gateway_save')
         ->middleware('can:admin.setup.shipping_gateways');
 });
 ```
+
+A user with one of `permissions.super_admin_roles` bypasses every `can:` check automatically (see `Gate::before` in the ServiceProvider) — there's no separate `role:` middleware to reach for.
 
 ## License
 

@@ -3,8 +3,8 @@
 namespace Duxbo\LaravelAuth\Console\Commands;
 
 use Illuminate\Console\Command;
-use Illuminate\Support\Facades\Hash;
 use Illuminate\Support\Str;
+use Duxbo\LaravelAuth\Database\Seeders\AdminUserSeeder;
 
 class InstallCommand extends Command
 {
@@ -105,28 +105,40 @@ class InstallCommand extends Command
         $this->components->bulletList($steps);
     }
 
+    /**
+     * Delegates the actual creation to AdminUserSeeder so `db:seed
+     * --class=...` and this command are guaranteed to do the same thing —
+     * only where the email/password/name come from differs here (CLI
+     * options, falling back to already-set config/.env, falling back to an
+     * interactive prompt unless --force).
+     */
     protected function seedAdmin(): void
     {
-        $email = $this->option('admin-email')
-            ?: ($this->option('force') ? null : $this->ask('Admin email (leave blank to skip)'));
+        $email = $this->option('admin-email') ?: config('laravel-auth.admin.email');
+
+        if (! $email && ! $this->option('force')) {
+            $email = $this->ask('Admin email (leave blank to skip)');
+        }
 
         if (! $email) {
             return;
         }
 
-        $password = $this->option('admin-password') ?: ($this->secret('Admin password') ?: Str::random(16));
-        $name = $this->option('admin-name') ?: $this->ask('Admin name', 'Administrator');
+        $password = $this->option('admin-password')
+            ?: config('laravel-auth.admin.password')
+            ?: ($this->option('force') ? null : $this->secret('Admin password'));
 
-        $userModel = config('laravel-auth.user_model');
+        $name = $this->option('admin-name')
+            ?: config('laravel-auth.admin.name')
+            ?: ($this->option('force') ? 'Administrator' : $this->ask('Admin name', 'Administrator'));
 
-        $user = $userModel::firstOrCreate(
-            ['email' => $email],
-            ['name' => $name, 'password' => Hash::make($password), 'email_verified_at' => now()]
-        );
+        config([
+            'laravel-auth.admin.email' => $email,
+            'laravel-auth.admin.password' => $password,
+            'laravel-auth.admin.name' => $name,
+        ]);
 
-        if (method_exists($user, 'assignRole')) {
-            $user->assignRole(...config('laravel-auth.permissions.super_admin_roles', ['super-admin']));
-        }
+        $this->call('db:seed', ['--class' => AdminUserSeeder::class, '--force' => true]);
 
         $this->components->info("Admin user ready: {$email}");
     }

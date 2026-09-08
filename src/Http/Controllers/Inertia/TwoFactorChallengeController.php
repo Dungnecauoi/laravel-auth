@@ -8,6 +8,7 @@ use Illuminate\Support\Facades\Auth;
 use Illuminate\Validation\ValidationException;
 use Inertia\Inertia;
 use Inertia\Response;
+use Duxbo\LaravelAuth\Actions\EnforceSingleSession;
 
 class TwoFactorChallengeController
 {
@@ -16,7 +17,7 @@ class TwoFactorChallengeController
         return Inertia::render('Auth/TwoFactorChallenge');
     }
 
-    public function store(Request $request): RedirectResponse
+    public function store(Request $request, EnforceSingleSession $singleSession): RedirectResponse
     {
         $userId = $request->session()->get('laravel-auth.2fa.user_id');
 
@@ -39,6 +40,7 @@ class TwoFactorChallengeController
 
         Auth::guard(config('laravel-auth.guard'))->login($user, $request->boolean('remember'));
         $request->session()->regenerate();
+        $singleSession->forUser($user, $request->session()->getId());
 
         return redirect()->intended(config('laravel-auth.redirects.home'));
     }

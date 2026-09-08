@@ -7,6 +7,7 @@ use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Auth;
 use Illuminate\View\View;
 use Duxbo\LaravelAuth\Actions\AttemptToAuthenticate;
+use Duxbo\LaravelAuth\Actions\EnforceSingleSession;
 
 class AuthenticatedSessionController
 {
@@ -15,7 +16,7 @@ class AuthenticatedSessionController
         return view('laravel-auth::auth.login');
     }
 
-    public function store(Request $request, AttemptToAuthenticate $authenticator): RedirectResponse
+    public function store(Request $request, AttemptToAuthenticate $authenticator, EnforceSingleSession $singleSession): RedirectResponse
     {
         $request->validate([
             'email' => ['required', 'email'],
@@ -35,6 +36,7 @@ class AuthenticatedSessionController
         }
 
         $request->session()->regenerate();
+        $singleSession->forUser($result['user'], $request->session()->getId());
 
         return redirect()->intended(config('laravel-auth.redirects.home'));
     }

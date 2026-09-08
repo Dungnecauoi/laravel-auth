@@ -6,11 +6,12 @@ use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Crypt;
 use Duxbo\LaravelAuth\Actions\AttemptToAuthenticate;
+use Duxbo\LaravelAuth\Actions\EnforceSingleSession;
 use Duxbo\LaravelAuth\Http\Resources\UserResource;
 
 class AuthenticatedSessionController
 {
-    public function store(Request $request, AttemptToAuthenticate $authenticator): JsonResponse
+    public function store(Request $request, AttemptToAuthenticate $authenticator, EnforceSingleSession $singleSession): JsonResponse
     {
         $request->validate([
             'email' => ['required', 'email'],
@@ -35,6 +36,7 @@ class AuthenticatedSessionController
             ]);
         }
 
+        $singleSession->forUser($result['user']);
         $token = $result['user']->createToken($request->userAgent() ?? 'api')->plainTextToken;
 
         return response()->json([
