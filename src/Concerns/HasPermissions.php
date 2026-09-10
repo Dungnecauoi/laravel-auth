@@ -29,13 +29,30 @@ trait HasPermissions
     {
         $key = "laravel-auth.user.{$this->getKey()}.permissions";
 
-        return Cache::remember($key, now()->addMinutes(10), function () {
+        // Cached as a plain array, not a Collection — some cache stores
+        // (database, file) round-trip objects through PHP's serialize()/
+        // unserialize(), and unserializing an Illuminate\Support\Collection
+        // this early in the request lifecycle (Gate::before, on every
+        // authorization check) can hit a PHP class-autoloading race that
+        // throws "incomplete object" instead of just working. An array has
+        // no such class to resolve.
+        // Short by design: this is a defense-in-depth bound on staleness,
+        // not the primary invalidation mechanism — Role/Permission model
+        // events and HasRoles/HasPermissions's grant/revoke methods forget
+        // this cache explicitly wherever they can. A short TTL just caps
+        // how long any *missed* invalidation path (a raw DB write, a
+        // mutation this package didn't anticipate) can stay wrong.
+        $ttl = config('laravel-auth.permissions.cache_ttl', 60);
+
+        $names = Cache::remember($key, now()->addSeconds($ttl), function () {
             $direct = $this->permissions()->pluck('name');
             $viaRoles = $this->roles()->with('permissions')->get()
                 ->flatMap(fn ($role) => $role->permissions->pluck('name'));
 
-            return $direct->merge($viaRoles)->unique()->values();
+            return $direct->merge($viaRoles)->unique()->values()->all();
         });
+
+        return collect($names);
     }
 
     public function grantPermission(string|Permission ...$permissions): static

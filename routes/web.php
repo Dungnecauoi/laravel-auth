@@ -33,7 +33,10 @@ Route::middleware('guest')->group(function () {
 
     if (config('laravel-auth.features.two_factor')) {
         Route::get('two-factor-challenge', [TwoFactorChallengeController::class, 'create'])->name('two-factor.challenge');
-        Route::post('two-factor-challenge', [TwoFactorChallengeController::class, 'store']);
+        // A 6-digit TOTP code is brute-forceable given enough unthrottled
+        // attempts by someone who already has the password — this endpoint
+        // had no rate limiting of any kind until this was added.
+        Route::post('two-factor-challenge', [TwoFactorChallengeController::class, 'store'])->middleware('throttle:5,1');
     }
 
     if (config('laravel-auth.features.password_reset')) {

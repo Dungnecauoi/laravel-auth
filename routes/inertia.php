@@ -27,7 +27,7 @@ Route::middleware('guest')->group(function () {
 
     if (config('laravel-auth.features.two_factor')) {
         Route::get('two-factor-challenge', [TwoFactorChallengeController::class, 'create'])->name('two-factor.challenge');
-        Route::post('two-factor-challenge', [TwoFactorChallengeController::class, 'store']);
+        Route::post('two-factor-challenge', [TwoFactorChallengeController::class, 'store'])->middleware('throttle:5,1');
     }
 
     if (config('laravel-auth.features.password_reset')) {

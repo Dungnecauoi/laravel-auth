@@ -135,6 +135,13 @@ return [
         // Role name(s) that always pass every permission check (Gate::before).
         'super_admin_roles' => ['super-admin'],
 
+        // How long (seconds) HasPermissions::allPermissionNames() may serve
+        // a stale result. Role/Permission changes invalidate this
+        // explicitly wherever this package controls the mutation — this is
+        // just the upper bound for anything that doesn't (a raw DB write,
+        // for instance).
+        'cache_ttl' => env('LARAVEL_AUTH_PERMISSIONS_CACHE_TTL', 60),
+
         // UserPolicy/RolePolicy/PermissionPolicy check these exact strings —
         // route scanning can't discover them on its own (a `can:viewAny,User`
         // middleware only reveals the generic ability "viewAny", not which

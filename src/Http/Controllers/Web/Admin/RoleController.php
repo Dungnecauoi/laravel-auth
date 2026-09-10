@@ -27,7 +27,7 @@ class RoleController
         $data = $this->validated($request, null);
 
         $role = Role::create(['name' => $data['name'], 'label' => $data['label'] ?? null]);
-        $role->permissions()->sync($data['permissions'] ?? []);
+        $role->syncPermissions($data['permissions'] ?? []);
 
         return redirect()->route('admin.roles.index')->with('success', __('laravel-auth::laravel-auth.status.role-created'));
     }
@@ -44,7 +44,7 @@ class RoleController
         $data = $this->validated($request, $role);
 
         $role->update(['name' => $data['name'], 'label' => $data['label'] ?? null]);
-        $role->permissions()->sync($data['permissions'] ?? []);
+        $role->syncPermissions($data['permissions'] ?? []);
 
         return redirect()->route('admin.roles.index')->with('success', __('laravel-auth::laravel-auth.status.role-updated'));
     }

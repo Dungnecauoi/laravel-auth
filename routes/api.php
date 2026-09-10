@@ -25,7 +25,7 @@ Route::middleware('api')->prefix('api')->group(function () {
     Route::post('login', [AuthenticatedSessionController::class, 'store']);
 
     if (config('laravel-auth.features.two_factor')) {
-        Route::post('two-factor-challenge', [TwoFactorChallengeController::class, 'store']);
+        Route::post('two-factor-challenge', [TwoFactorChallengeController::class, 'store'])->middleware('throttle:5,1');
     }
 
     if (config('laravel-auth.features.password_reset')) {
