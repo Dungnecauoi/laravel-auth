@@ -1,11 +1,14 @@
-@extends('laravel-auth::layouts.admin')
+<x-layouts.admin :title="__('Sửa người dùng')">
+    <x-admin.breadcrumb>
+        <x-admin.breadcrumb-item :href="route('admin.users.index')">{{ __('Người dùng') }}</x-admin.breadcrumb-item>
+        <x-admin.breadcrumb-item current>{{ $user->name }}</x-admin.breadcrumb-item>
+    </x-admin.breadcrumb>
 
-@section('title', __('Sửa người dùng'))
-
-@section('content')
-    <form method="POST" action="{{ route('admin.users.update', $user) }}" class="max-w-md space-y-4 rounded-xl bg-white p-6 shadow-sm ring-1 ring-gray-200">
-        @csrf
-        @method('PUT')
-        @include('laravel-auth::admin.users._form')
-    </form>
-@endsection
+    <x-admin.card class="max-w-md">
+        <form method="POST" action="{{ route('admin.users.update', $user) }}" class="space-y-4">
+            @csrf
+            @method('PUT')
+            @include('laravel-auth::admin.users._form')
+        </form>
+    </x-admin.card>
+</x-layouts.admin>

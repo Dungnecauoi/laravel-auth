@@ -81,6 +81,13 @@ class InstallCommand extends Command
             // editable files under resources/views, not just whatever the
             // package quietly loads from vendor/ via loadViewsFrom().
             $this->call('vendor:publish', ['--tag' => 'laravel-auth-views', '--force' => true]);
+
+            if (! class_exists(\LaravelBladeKit\BladeKitServiceProvider::class)) {
+                $this->components->warn(
+                    'The blade stack renders <x-layouts.*>/<x-admin.*> components from dungnecauoi/laravel-blade-kit, '
+                    .'which isn\'t installed. Run: composer require dungnecauoi/laravel-blade-kit && php artisan blade-kit:install'
+                );
+            }
         }
 
         return $stack;

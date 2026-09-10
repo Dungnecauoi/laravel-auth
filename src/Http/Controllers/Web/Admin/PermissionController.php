@@ -27,7 +27,7 @@ class PermissionController
 
         Permission::create($data);
 
-        return redirect()->route('admin.permissions.index')->with('status', 'permission-created');
+        return redirect()->route('admin.permissions.index')->with('success', __('laravel-auth::laravel-auth.status.permission-created'));
     }
 
     public function edit(Permission $permission): View
@@ -39,14 +39,14 @@ class PermissionController
     {
         $permission->update($this->validated($request, $permission));
 
-        return redirect()->route('admin.permissions.index')->with('status', 'permission-updated');
+        return redirect()->route('admin.permissions.index')->with('success', __('laravel-auth::laravel-auth.status.permission-updated'));
     }
 
     public function destroy(Permission $permission): RedirectResponse
     {
         $permission->delete();
 
-        return redirect()->route('admin.permissions.index')->with('status', 'permission-deleted');
+        return redirect()->route('admin.permissions.index')->with('success', __('laravel-auth::laravel-auth.status.permission-deleted'));
     }
 
     protected function validated(Request $request, ?Permission $permission): array

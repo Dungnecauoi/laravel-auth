@@ -18,7 +18,7 @@ class SessionController
                 ->delete();
         }
 
-        return back()->with('status', 'session-revoked');
+        return back()->with('success', __('laravel-auth::laravel-auth.status.session-revoked'));
     }
 
     public function destroyOthers(Request $request): RedirectResponse
@@ -34,6 +34,6 @@ class SessionController
                 ->delete();
         }
 
-        return back()->with('status', 'other-sessions-revoked');
+        return back()->with('success', __('laravel-auth::laravel-auth.status.other-sessions-revoked'));
     }
 }

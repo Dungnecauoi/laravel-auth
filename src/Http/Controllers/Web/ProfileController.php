@@ -40,7 +40,7 @@ class ProfileController
     {
         $updater->update($request->user(), $request->all());
 
-        return back()->with('status', 'profile-updated');
+        return back()->with('success', __('laravel-auth::laravel-auth.status.profile-updated'));
     }
 
     public function destroy(Request $request, DeleteUser $deleter): RedirectResponse

@@ -12,6 +12,6 @@ class PasswordController
     {
         $updater->update($request->user(), $request->all());
 
-        return back()->with('status', 'password-updated');
+        return back()->with('success', __('laravel-auth::laravel-auth.status.password-updated'));
     }
 }

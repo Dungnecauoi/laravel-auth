@@ -54,7 +54,7 @@ class UserController
             $user->syncRoles($data['roles'] ?? []);
         }
 
-        return redirect()->route('admin.users.index')->with('status', 'user-created');
+        return redirect()->route('admin.users.index')->with('success', __('laravel-auth::laravel-auth.status.user-created'));
     }
 
     public function edit($user): View
@@ -80,14 +80,14 @@ class UserController
             $user->syncRoles($data['roles'] ?? []);
         }
 
-        return redirect()->route('admin.users.index')->with('status', 'user-updated');
+        return redirect()->route('admin.users.index')->with('success', __('laravel-auth::laravel-auth.status.user-updated'));
     }
 
     public function destroy($user): RedirectResponse
     {
         $user->delete();
 
-        return redirect()->route('admin.users.index')->with('status', 'user-deleted');
+        return redirect()->route('admin.users.index')->with('success', __('laravel-auth::laravel-auth.status.user-deleted'));
     }
 
     protected function validated(Request $request, $user): array

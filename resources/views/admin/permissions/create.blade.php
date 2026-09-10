@@ -1,10 +1,13 @@
-@extends('laravel-auth::layouts.admin')
+<x-layouts.admin :title="__('Thêm quyền')">
+    <x-admin.breadcrumb>
+        <x-admin.breadcrumb-item :href="route('admin.permissions.index')">{{ __('Quyền') }}</x-admin.breadcrumb-item>
+        <x-admin.breadcrumb-item current>{{ __('Thêm mới') }}</x-admin.breadcrumb-item>
+    </x-admin.breadcrumb>
 
-@section('title', __('Thêm quyền'))
-
-@section('content')
-    <form method="POST" action="{{ route('admin.permissions.store') }}" class="max-w-md space-y-4 rounded-xl bg-white p-6 shadow-sm ring-1 ring-gray-200">
-        @csrf
-        @include('laravel-auth::admin.permissions._form')
-    </form>
-@endsection
+    <x-admin.card class="max-w-md">
+        <form method="POST" action="{{ route('admin.permissions.store') }}" class="space-y-4">
+            @csrf
+            @include('laravel-auth::admin.permissions._form')
+        </form>
+    </x-admin.card>
+</x-layouts.admin>

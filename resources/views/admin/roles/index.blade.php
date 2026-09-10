@@ -1,45 +1,37 @@
-@extends('laravel-auth::layouts.admin')
+<x-layouts.admin :title="__('Vai trò')">
+    <x-admin.breadcrumb>
+        <x-admin.breadcrumb-item current>{{ __('Vai trò') }}</x-admin.breadcrumb-item>
+    </x-admin.breadcrumb>
 
-@section('title', __('Vai trò'))
+    <x-admin.card :padding="false">
+        <x-slot:actions>
+            <x-admin.button :href="route('admin.roles.create')" size="sm">{{ __('Thêm vai trò') }}</x-admin.button>
+        </x-slot:actions>
 
-@section('actions')
-    <a href="{{ route('admin.roles.create') }}" class="rounded-md bg-indigo-600 px-3 py-1.5 text-sm font-semibold text-white shadow-sm hover:bg-indigo-500">
-        {{ __('Thêm vai trò') }}
-    </a>
-@endsection
-
-@section('content')
-    <div class="overflow-x-auto rounded-xl bg-white shadow-sm ring-1 ring-gray-200">
-        <table class="min-w-full divide-y divide-gray-100 text-sm">
-            <thead>
-                <tr class="text-left text-gray-500">
-                    <th class="px-4 py-3 font-medium">{{ __('Tên') }}</th>
-                    <th class="px-4 py-3 font-medium">{{ __('Số người dùng') }}</th>
-                    <th class="px-4 py-3"></th>
+        <x-admin.table :headers="[__('Tên'), __('Số người dùng'), '']">
+            @forelse ($roles as $role)
+                <tr>
+                    <td class="px-4 py-3 text-sm font-medium text-neutral-900">
+                        {{ $role->label ?? $role->name }} <span class="font-normal text-neutral-400">({{ $role->name }})</span>
+                    </td>
+                    <td class="px-4 py-3 text-sm text-neutral-600">{{ $role->users_count }}</td>
+                    <td class="px-4 py-3 text-right text-sm">
+                        <a href="{{ route('admin.roles.edit', $role) }}" class="font-medium text-primary-600 hover:text-primary-500">{{ __('Sửa') }}</a>
+                        <x-admin.confirm-action
+                            :id="'delete-role-'.$role->id"
+                            :action="route('admin.roles.destroy', $role)"
+                            :message="__('Xoá vai trò :name?', ['name' => $role->label ?? $role->name])"
+                            class="ml-3"
+                        />
+                    </td>
                 </tr>
-            </thead>
-            <tbody class="divide-y divide-gray-100">
-                @forelse ($roles as $role)
-                    <tr>
-                        <td class="px-4 py-3 font-medium text-gray-900">{{ $role->label ?? $role->name }} <span class="font-normal text-gray-400">({{ $role->name }})</span></td>
-                        <td class="px-4 py-3 text-gray-600">{{ $role->users_count }}</td>
-                        <td class="px-4 py-3 text-right">
-                            <a href="{{ route('admin.roles.edit', $role) }}" class="font-medium text-indigo-600 hover:text-indigo-500">{{ __('Sửa') }}</a>
-                            <form method="POST" action="{{ route('admin.roles.destroy', $role) }}" class="ml-3 inline" onsubmit="return confirm('{{ __('Xoá vai trò này?') }}')">
-                                @csrf
-                                @method('DELETE')
-                                <button type="submit" class="font-medium text-red-600 hover:text-red-500">{{ __('Xoá') }}</button>
-                            </form>
-                        </td>
-                    </tr>
-                @empty
-                    <tr>
-                        <td colspan="3" class="px-4 py-6 text-center text-gray-500">{{ __('Chưa có vai trò nào.') }}</td>
-                    </tr>
-                @endforelse
-            </tbody>
-        </table>
-    </div>
+            @empty
+                <tr>
+                    <td colspan="3" class="px-4 py-6 text-center text-sm text-neutral-500">{{ __('Chưa có vai trò nào.') }}</td>
+                </tr>
+            @endforelse
+        </x-admin.table>
 
-    {{ $roles->links() }}
-@endsection
+        <x-admin.pagination :paginator="$roles" />
+    </x-admin.card>
+</x-layouts.admin>

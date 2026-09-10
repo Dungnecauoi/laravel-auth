@@ -12,7 +12,7 @@ class TwoFactorAuthenticationController
     {
         $request->user()->generateTwoFactorSecret();
 
-        return back()->with('status', 'two-factor-authentication-started');
+        return back()->with('success', __('laravel-auth::laravel-auth.status.two-factor-authentication-started'));
     }
 
     public function confirm(Request $request): RedirectResponse
@@ -25,14 +25,14 @@ class TwoFactorAuthenticationController
             ]);
         }
 
-        return back()->with('status', 'two-factor-authentication-confirmed');
+        return back()->with('success', __('laravel-auth::laravel-auth.status.two-factor-authentication-confirmed'));
     }
 
     public function destroy(Request $request): RedirectResponse
     {
         $request->user()->disableTwoFactorAuthentication();
 
-        return back()->with('status', 'two-factor-authentication-disabled');
+        return back()->with('success', __('laravel-auth::laravel-auth.status.two-factor-authentication-disabled'));
     }
 
     public function regenerateRecoveryCodes(Request $request): RedirectResponse
@@ -42,7 +42,7 @@ class TwoFactorAuthenticationController
         // Shown once, right here — recovery codes are never re-displayed
         // from storage on a later page load, only right after (re)generation.
         return back()
-            ->with('status', 'recovery-codes-generated')
+            ->with('success', __('laravel-auth::laravel-auth.status.recovery-codes-generated'))
             ->with('recovery_codes', $request->user()->recoveryCodes());
     }
 }

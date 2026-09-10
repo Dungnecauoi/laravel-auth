@@ -1,49 +1,38 @@
-@extends('laravel-auth::layouts.admin')
+<x-layouts.admin :title="__('Quyền')">
+    <x-admin.breadcrumb>
+        <x-admin.breadcrumb-item current>{{ __('Quyền') }}</x-admin.breadcrumb-item>
+    </x-admin.breadcrumb>
 
-@section('title', __('Quyền'))
+    <x-admin.card :padding="false">
+        <x-slot:actions>
+            <x-admin.button :href="route('admin.permissions.create')" size="sm">{{ __('Thêm quyền') }}</x-admin.button>
+        </x-slot:actions>
 
-@section('actions')
-    <a href="{{ route('admin.permissions.create') }}" class="rounded-md bg-indigo-600 px-3 py-1.5 text-sm font-semibold text-white shadow-sm hover:bg-indigo-500">
-        {{ __('Thêm quyền') }}
-    </a>
-@endsection
-
-@section('content')
-    <div class="overflow-x-auto rounded-xl bg-white shadow-sm ring-1 ring-gray-200">
-        <table class="min-w-full divide-y divide-gray-100 text-sm">
-            <thead>
-                <tr class="text-left text-gray-500">
-                    <th class="px-4 py-3 font-medium">{{ __('Tên') }}</th>
-                    <th class="px-4 py-3 font-medium">{{ __('Nhãn') }}</th>
-                    <th class="px-4 py-3 font-medium">{{ __('Số vai trò') }}</th>
-                    <th class="px-4 py-3"></th>
+        <x-admin.table :headers="[__('Tên'), __('Nhãn'), __('Số vai trò'), '']">
+            @forelse ($permissions as $permission)
+                <tr>
+                    <td class="px-4 py-3 font-mono text-xs text-neutral-900">{{ $permission->name }}</td>
+                    <td class="px-4 py-3 text-sm text-neutral-600">{{ $permission->label }}</td>
+                    <td class="px-4 py-3 text-sm text-neutral-600">{{ $permission->roles_count }}</td>
+                    <td class="px-4 py-3 text-right text-sm">
+                        <a href="{{ route('admin.permissions.edit', $permission) }}" class="font-medium text-primary-600 hover:text-primary-500">{{ __('Sửa') }}</a>
+                        <x-admin.confirm-action
+                            :id="'delete-permission-'.$permission->id"
+                            :action="route('admin.permissions.destroy', $permission)"
+                            :message="__('Xoá quyền :name?', ['name' => $permission->name])"
+                            class="ml-3"
+                        />
+                    </td>
                 </tr>
-            </thead>
-            <tbody class="divide-y divide-gray-100">
-                @forelse ($permissions as $permission)
-                    <tr>
-                        <td class="px-4 py-3 font-mono text-xs text-gray-900">{{ $permission->name }}</td>
-                        <td class="px-4 py-3 text-gray-600">{{ $permission->label }}</td>
-                        <td class="px-4 py-3 text-gray-600">{{ $permission->roles_count }}</td>
-                        <td class="px-4 py-3 text-right">
-                            <a href="{{ route('admin.permissions.edit', $permission) }}" class="font-medium text-indigo-600 hover:text-indigo-500">{{ __('Sửa') }}</a>
-                            <form method="POST" action="{{ route('admin.permissions.destroy', $permission) }}" class="ml-3 inline" onsubmit="return confirm('{{ __('Xoá quyền này?') }}')">
-                                @csrf
-                                @method('DELETE')
-                                <button type="submit" class="font-medium text-red-600 hover:text-red-500">{{ __('Xoá') }}</button>
-                            </form>
-                        </td>
-                    </tr>
-                @empty
-                    <tr>
-                        <td colspan="4" class="px-4 py-6 text-center text-gray-500">
-                            {{ __('Chưa có quyền nào — chạy') }} <code class="font-mono">php artisan laravel-auth:sync-permissions --seed</code>.
-                        </td>
-                    </tr>
-                @endforelse
-            </tbody>
-        </table>
-    </div>
+            @empty
+                <tr>
+                    <td colspan="4" class="px-4 py-6 text-center text-sm text-neutral-500">
+                        {{ __('Chưa có quyền nào — chạy') }} <code class="font-mono">php artisan laravel-auth:sync-permissions --seed</code>.
+                    </td>
+                </tr>
+            @endforelse
+        </x-admin.table>
 
-    {{ $permissions->links() }}
-@endsection
+        <x-admin.pagination :paginator="$permissions" />
+    </x-admin.card>
+</x-layouts.admin>

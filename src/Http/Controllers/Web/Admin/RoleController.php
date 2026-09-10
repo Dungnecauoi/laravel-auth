@@ -29,7 +29,7 @@ class RoleController
         $role = Role::create(['name' => $data['name'], 'label' => $data['label'] ?? null]);
         $role->permissions()->sync($data['permissions'] ?? []);
 
-        return redirect()->route('admin.roles.index')->with('status', 'role-created');
+        return redirect()->route('admin.roles.index')->with('success', __('laravel-auth::laravel-auth.status.role-created'));
     }
 
     public function edit(Role $role): View
@@ -46,14 +46,14 @@ class RoleController
         $role->update(['name' => $data['name'], 'label' => $data['label'] ?? null]);
         $role->permissions()->sync($data['permissions'] ?? []);
 
-        return redirect()->route('admin.roles.index')->with('status', 'role-updated');
+        return redirect()->route('admin.roles.index')->with('success', __('laravel-auth::laravel-auth.status.role-updated'));
     }
 
     public function destroy(Role $role): RedirectResponse
     {
         $role->delete();
 
-        return redirect()->route('admin.roles.index')->with('status', 'role-deleted');
+        return redirect()->route('admin.roles.index')->with('success', __('laravel-auth::laravel-auth.status.role-deleted'));
     }
 
     protected function validated(Request $request, ?Role $role): array

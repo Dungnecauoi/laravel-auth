@@ -32,6 +32,7 @@ class LaravelAuthServiceProvider extends ServiceProvider
         $this->registerGateIntegration();
         $this->registerPolicies();
         $this->registerAuditLog();
+        $this->registerAdminMenu();
 
         if ($this->app->runningInConsole()) {
             $this->commands([
@@ -143,5 +144,33 @@ class LaravelAuthServiceProvider extends ServiceProvider
         if (config('laravel-auth.features.audit_log')) {
             Event::subscribe(AuditAuthEvents::class);
         }
+    }
+
+    /**
+     * The admin views (routes/admin.php) render <x-layouts.admin>/<x-admin.*>
+     * from dungnecauoi/laravel-blade-kit — a peer dependency, not something
+     * this package vendors. Its sidebar is config-driven ('admin.menu'), so
+     * when it's installed we just append our own entries to that array;
+     * when it isn't, this is a no-op and the admin routes simply won't
+     * render correctly until `composer require dungnecauoi/laravel-blade-kit
+     * && php artisan blade-kit:install` is run.
+     */
+    protected function registerAdminMenu(): void
+    {
+        if (! config('laravel-auth.features.admin_ui') || ! config()->has('admin.menu')) {
+            return;
+        }
+
+        config(['admin.menu' => array_merge(config('admin.menu', []), [
+            [
+                'label' => __('Quản lý tài khoản'),
+                'icon' => 'users',
+                'children' => [
+                    ['label' => __('Người dùng'), 'icon' => 'users', 'route' => 'admin.users.index'],
+                    ['label' => __('Vai trò'), 'icon' => 'settings', 'route' => 'admin.roles.index'],
+                    ['label' => __('Quyền'), 'icon' => 'settings', 'route' => 'admin.permissions.index'],
+                ],
+            ],
+        ])]);
     }
 }
