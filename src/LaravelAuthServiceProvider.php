@@ -4,6 +4,7 @@ namespace Duxbo\LaravelAuth;
 
 use Illuminate\Support\Facades\Event;
 use Illuminate\Support\Facades\Gate;
+use Illuminate\Support\Facades\Route;
 use Illuminate\Support\ServiceProvider;
 use Duxbo\LaravelAuth\Console\Commands\InstallCommand;
 use Duxbo\LaravelAuth\Console\Commands\SyncRoutePermissionsCommand;
@@ -91,17 +92,30 @@ class LaravelAuthServiceProvider extends ServiceProvider
                 continue; // avoid hard dependency on inertiajs/inertia-laravel
             }
 
-            if (file_exists($file)) {
-                // Deliberately no name/prefix group: routes keep Laravel's own
-                // conventional names (login, register, password.reset, ...)
-                // so `route('login')`, the default Authenticate middleware,
-                // and any other package that assumes those names keep working.
+            if (! file_exists($file)) {
+                continue;
+            }
+
+            // Deliberately no name/prefix group: routes keep Laravel's own
+            // conventional names (login, register, password.reset, ...)
+            // so `route('login')`, the default Authenticate middleware,
+            // and any other package that assumes those names keep working.
+            //
+            // The "web" group, however, IS added explicitly here: routes
+            // registered via loadRoutesFrom() inside a ServiceProvider never
+            // get it automatically the way the host app's own routes/web.php
+            // does — without it, sessions, CSRF verification, and $errors
+            // simply don't exist on these routes. routes/api.php wraps
+            // itself in the "api" group instead, so it's left alone here.
+            if (in_array($flavor, ['web', 'inertia'], true)) {
+                Route::middleware('web')->group(fn () => $this->loadRoutesFrom($file));
+            } else {
                 $this->loadRoutesFrom($file);
             }
         }
 
         if (config('laravel-auth.features.admin_ui')) {
-            $this->loadRoutesFrom(__DIR__.'/../routes/admin.php');
+            Route::middleware('web')->group(fn () => $this->loadRoutesFrom(__DIR__.'/../routes/admin.php'));
         }
     }
 

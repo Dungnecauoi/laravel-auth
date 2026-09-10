@@ -26,7 +26,7 @@
     <div class="flex flex-wrap gap-3">
         @forelse ($roles as $role)
             @php
-                $checked = collect(old('roles', $user->roles->pluck('id')->all() ?? []))->contains($role->id);
+                $checked = collect(old('roles', $user?->roles?->pluck('id')->all() ?? []))->contains($role->id);
             @endphp
             <label for="role-{{ $role->id }}" class="flex items-center gap-x-2 text-sm text-neutral-700 select-none">
                 <input

@@ -135,6 +135,18 @@ return [
         // Role name(s) that always pass every permission check (Gate::before).
         'super_admin_roles' => ['super-admin'],
 
+        // UserPolicy/RolePolicy/PermissionPolicy check these exact strings —
+        // route scanning can't discover them on its own (a `can:viewAny,User`
+        // middleware only reveals the generic ability "viewAny", not which
+        // resource's policy it resolves to). `sync-permissions --seed`
+        // always includes this list so the admin Roles page has something
+        // real to assign, out of the box.
+        'builtin' => [
+            'laravel-auth.users.viewAny', 'laravel-auth.users.view', 'laravel-auth.users.create', 'laravel-auth.users.update', 'laravel-auth.users.delete',
+            'laravel-auth.roles.viewAny', 'laravel-auth.roles.view', 'laravel-auth.roles.create', 'laravel-auth.roles.update', 'laravel-auth.roles.delete',
+            'laravel-auth.permissions.viewAny', 'laravel-auth.permissions.view', 'laravel-auth.permissions.create', 'laravel-auth.permissions.update', 'laravel-auth.permissions.delete',
+        ],
+
         // When true, `php artisan laravel-auth:sync-permissions` fails (exit 1)
         // if it finds routes without an explicit `can:`/`permission:` middleware
         // that also aren't in `permissions.ignored_routes` — use it in CI.
@@ -145,6 +157,12 @@ return [
             'login', 'logout', 'register',
             'password.*', 'verification.*', 'two-factor.*',
             'sanctum.csrf-cookie',
+            // "Manage my own account" routes — auth is enough, no permission needed.
+            'profile.*', 'sessions.*',
+            // Genuinely can:-protected (see permissions.builtin above) — the
+            // scanner just can't read a policy-resolved ability's real slug
+            // out of `can:viewAny,Model` the way it can a bare `can:some.slug`.
+            'admin.users.*', 'admin.roles.*', 'admin.permissions.*',
         ],
     ],
 

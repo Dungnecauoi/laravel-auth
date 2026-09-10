@@ -19,7 +19,7 @@
     <div class="grid max-h-64 grid-cols-2 gap-2 overflow-y-auto rounded-md border border-neutral-200 p-3">
         @forelse ($permissions as $permission)
             @php
-                $checked = collect(old('permissions', $role->permissions->pluck('id')->all() ?? []))->contains($permission->id);
+                $checked = collect(old('permissions', $role?->permissions?->pluck('id')->all() ?? []))->contains($permission->id);
             @endphp
             <label for="permission-{{ $permission->id }}" class="flex items-center gap-x-2 text-sm text-neutral-700 select-none">
                 <input

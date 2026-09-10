@@ -44,9 +44,9 @@ class SyncRoutePermissionsCommand extends Command
             RouteMissingPermission::dispatch($route);
         }
 
-        $found = $found->unique()->sort()->values();
+        $found = $found->merge(config('laravel-auth.permissions.builtin', []))->unique()->sort()->values();
 
-        $this->components->info("Found {$found->count()} permission(s) referenced by routes.");
+        $this->components->info("Found {$found->count()} permission(s) (from routes + built-in admin policies).");
 
         if ($this->option('seed')) {
             $found->each(fn ($name) => Permission::firstOrCreate(['name' => $name]));
@@ -69,12 +69,23 @@ class SyncRoutePermissionsCommand extends Command
         return self::SUCCESS;
     }
 
+    /**
+     * Only extracts a permission slug from `can:some.slug` with NO model
+     * argument — that's the direct Gate::before pattern (the ability string
+     * IS the permission name). `can:viewAny,App\Models\User` is a
+     * Policy-backed check instead: "viewAny" is a generic ability name
+     * reused across every resource's policy, not a real permission slug —
+     * the actual slug (e.g. "laravel-auth.users.viewAny") only exists as a
+     * string literal inside that policy method, invisible to route
+     * scanning. Those come from config('laravel-auth.permissions.builtin')
+     * instead (see handle()).
+     */
     protected function permissionFromRoute(Route $route): ?string
     {
         foreach ($route->gatherMiddleware() as $middleware) {
             foreach (['can:', 'permission:'] as $prefix) {
-                if (Str::startsWith($middleware, $prefix)) {
-                    return Str::before(Str::after($middleware, $prefix), ',');
+                if (Str::startsWith($middleware, $prefix) && ! str_contains($middleware, ',')) {
+                    return Str::after($middleware, $prefix);
                 }
             }
         }
