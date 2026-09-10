@@ -27,6 +27,12 @@ class InstallCommand extends Command
 
         $stack = $this->selectStack();
 
+        // Sanctum v4 no longer auto-loads its own migrations (older versions
+        // did) — without this, personal_access_tokens never exists and
+        // anything touching $user->tokens() (API token issuance,
+        // features.single_session's token revocation) fails outright.
+        $this->call('vendor:publish', ['--tag' => 'sanctum-migrations']);
+
         $this->components->task('Running migrations', fn () => $this->call('migrate') === 0);
 
         $this->components->task(

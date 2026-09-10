@@ -50,8 +50,12 @@ class UserController
             'email_verified_at' => now(),
         ]);
 
-        if (method_exists($user, 'syncRoles')) {
-            $user->syncRoles($data['roles'] ?? []);
+        if (method_exists($user, 'roles')) {
+            // Deliberately not HasRoles::syncRoles() — that helper treats its
+            // input as role NAMES (firstOrCreate(['name' => $role])), for the
+            // common `$user->assignRole('admin')` usage. This form submits
+            // role IDs (checkbox values), so sync the relation directly.
+            $user->roles()->sync($data['roles'] ?? []);
         }
 
         return redirect()->route('admin.users.index')->with('success', __('laravel-auth::laravel-auth.status.user-created'));
@@ -76,15 +80,26 @@ class UserController
 
         $user->save();
 
-        if (method_exists($user, 'syncRoles')) {
-            $user->syncRoles($data['roles'] ?? []);
+        if (method_exists($user, 'roles')) {
+            // Deliberately not HasRoles::syncRoles() — that helper treats its
+            // input as role NAMES (firstOrCreate(['name' => $role])), for the
+            // common `$user->assignRole('admin')` usage. This form submits
+            // role IDs (checkbox values), so sync the relation directly.
+            $user->roles()->sync($data['roles'] ?? []);
         }
 
         return redirect()->route('admin.users.index')->with('success', __('laravel-auth::laravel-auth.status.user-updated'));
     }
 
-    public function destroy($user): RedirectResponse
+    public function destroy(Request $request, $user): RedirectResponse
     {
+        // UserPolicy::delete() also refuses self-deletion, but Gate::before's
+        // super-admin bypass (any ability, no exceptions) skips the policy
+        // entirely for that role — so a super-admin's own "Xoá" click would
+        // otherwise actually delete their own account. This check can't be
+        // bypassed by any permission, super-admin included.
+        abort_if($user->getKey() === $request->user()->getKey(), 403, __('Không thể tự xoá tài khoản của chính mình.'));
+
         $user->delete();
 
         return redirect()->route('admin.users.index')->with('success', __('laravel-auth::laravel-auth.status.user-deleted'));

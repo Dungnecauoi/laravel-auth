@@ -3,14 +3,14 @@
 namespace Duxbo\LaravelAuth\Console\Commands;
 
 use Illuminate\Console\Command;
+use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\File;
 
 /**
  * Reverses `laravel-auth:install` as far as a package safely can on its own:
- * rolls back only its own migrations (never touches unrelated ones sharing
- * a batch), and optionally removes published config/views/lang. It can't
- * safely edit your User model or composer.json for you — those steps are
- * printed at the end.
+ * rolls back only its own migrations, and optionally removes published
+ * config/views/lang. It can't safely edit your User model or composer.json
+ * for you — those steps are printed at the end.
  */
 class UninstallCommand extends Command
 {
@@ -30,13 +30,11 @@ class UninstallCommand extends Command
             return self::FAILURE;
         }
 
-        $this->components->task(
-            'Rolling back laravel-auth migrations',
-            fn () => $this->call('migrate:rollback', [
-                '--path' => $this->migrationsPath(),
-                '--force' => true,
-            ]) === 0
-        );
+        $this->components->task('Rolling back laravel-auth migrations', function () {
+            $this->rollbackOwnMigrations();
+
+            return true;
+        });
 
         if ($this->option('purge')) {
             $this->purgePublishedFiles();
@@ -53,15 +51,40 @@ class UninstallCommand extends Command
     }
 
     /**
-     * Path relative to base_path(), as required by migrate:rollback --path,
-     * scoped to only this package's own migration files regardless of
-     * where composer actually installed it.
+     * Deliberately does NOT use `migrate:rollback --path=...`:
+     *
+     * 1. `--path` must be relative to base_path(), but this package is
+     *    commonly installed via a composer path repository (a symlink) —
+     *    realpath() resolves straight through that symlink to a directory
+     *    outside base_path() entirely, so no relative path can even
+     *    express it without --realpath.
+     * 2. More fundamentally, a plain `migrate:rollback` only rolls back
+     *    the LATEST batch. If anything else migrated after this package
+     *    did (a host-app migration, another package's — even Sanctum's,
+     *    if it wasn't published+run until later), our own migrations
+     *    aren't in that batch at all and never get touched, regardless of
+     *    --path.
+     *
+     * Calling down() on each of our own migration files directly sidesteps
+     * both problems — it doesn't care what batch anything is in.
      */
-    protected function migrationsPath(): string
+    protected function rollbackOwnMigrations(): void
     {
-        $absolute = realpath(__DIR__.'/../../../database/migrations');
+        $files = glob(__DIR__.'/../../../database/migrations/*.php');
+        rsort($files);
 
-        return str_replace(base_path().DIRECTORY_SEPARATOR, '', $absolute);
+        $table = config('database.migrations', 'migrations');
+        $table = is_array($table) ? ($table['table'] ?? 'migrations') : $table;
+
+        foreach ($files as $file) {
+            $migration = require $file;
+
+            if (is_object($migration) && method_exists($migration, 'down')) {
+                $migration->down();
+            }
+
+            DB::table($table)->where('migration', basename($file, '.php'))->delete();
+        }
     }
 
     protected function purgePublishedFiles(): void
