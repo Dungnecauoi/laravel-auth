@@ -3,11 +3,17 @@
     "description": "Full user management, fine-grained per-route permissions, and complete auth flows for Laravel — works with Blade, API and Inertia.",
     "type": "library",
     "license": "MIT",
+    "authors": [
+        {
+            "name": "duxbo",
+            "email": "dungduc10a8@gmail.com"
+        }
+    ],
     "require": {
         "php": "^8.2",
-        "illuminate/support": "^10.0|^11.0|^12.0",
-        "illuminate/auth": "^10.0|^11.0|^12.0",
-        "illuminate/database": "^10.0|^11.0|^12.0",
+        "illuminate/support": "^10.0|^11.0|^12.0|^13.0",
+        "illuminate/auth": "^10.0|^11.0|^12.0|^13.0",
+        "illuminate/database": "^10.0|^11.0|^12.0|^13.0",
         "laravel/sanctum": "^4.0"
     },
     "suggest": {
@@ -15,7 +21,7 @@
         "bacon/bacon-qr-code": "Required to render the two-factor authentication QR code.",
         "laravel/socialite": "Required to enable social login (features.social_login).",
         "inertiajs/inertia-laravel": "Required when using the 'inertia' or 'hybrid' frontend flavor.",
-        "dungnecauoi/laravel-blade-kit": "Peer dependency for the 'blade' stack — this package's Blade views use its <x-layouts.*> and <x-admin.*> components, resolved against whatever the host app has installed (`php artisan blade-kit:install`). Not needed for 'api'/'headless'."
+        "duxbo/laravel-blade-kit": "Peer dependency for the 'blade' stack — this package's Blade views use its <x-layouts.*> and <x-admin.*> components, resolved against whatever the host app has installed (`php artisan blade-kit:install`). Not needed for 'api'/'headless'."
     },
     "require-dev": {
         "orchestra/testbench": "^8.0|^9.0|^10.0",

@@ -15,12 +15,12 @@ The install command asks which UI stack to use (**blade**, **inertia-react**, **
 - **inertia-react** / **inertia-vue** wire up `config('laravel-auth.frontend') = inertia` and the matching routes/controllers; the page components themselves are a separate starter kit still coming, so you'll wire your own `Auth/Login.jsx`/`.vue` etc. against `routes/inertia.php` for now.
 - **headless** is `config('laravel-auth.frontend') = api` — no views at all, just the JSON endpoints.
 
-### The blade stack needs `dungnecauoi/laravel-blade-kit`
+### The blade stack needs `duxbo/laravel-blade-kit`
 
 Every Blade view this package ships (`<x-layouts.auth>`, `<x-layouts.admin>`, `<x-admin.input>`, `<x-admin.table>`, ...) is a **peer dependency** on [laravel-blade-kit](https://github.com/Dungnecauoi/laravel-blade-kit) — it doesn't vendor a copy, it just uses the tags, resolved against whatever the host app has installed:
 
 ```bash
-composer require dungnecauoi/laravel-blade-kit
+composer require duxbo/laravel-blade-kit
 php artisan blade-kit:install
 ```
 

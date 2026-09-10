@@ -84,8 +84,8 @@ class InstallCommand extends Command
 
             if (! class_exists(\LaravelBladeKit\BladeKitServiceProvider::class)) {
                 $this->components->warn(
-                    'The blade stack renders <x-layouts.*>/<x-admin.*> components from dungnecauoi/laravel-blade-kit, '
-                    .'which isn\'t installed. Run: composer require dungnecauoi/laravel-blade-kit && php artisan blade-kit:install'
+                    'The blade stack renders <x-layouts.*>/<x-admin.*> components from duxbo/laravel-blade-kit, '
+                    .'which isn\'t installed. Run: composer require duxbo/laravel-blade-kit && php artisan blade-kit:install'
                 );
             }
         }

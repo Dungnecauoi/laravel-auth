@@ -148,11 +148,11 @@ class LaravelAuthServiceProvider extends ServiceProvider
 
     /**
      * The admin views (routes/admin.php) render <x-layouts.admin>/<x-admin.*>
-     * from dungnecauoi/laravel-blade-kit — a peer dependency, not something
+     * from duxbo/laravel-blade-kit — a peer dependency, not something
      * this package vendors. Its sidebar is config-driven ('admin.menu'), so
      * when it's installed we just append our own entries to that array;
      * when it isn't, this is a no-op and the admin routes simply won't
-     * render correctly until `composer require dungnecauoi/laravel-blade-kit
+     * render correctly until `composer require duxbo/laravel-blade-kit
      * && php artisan blade-kit:install` is run.
      */
     protected function registerAdminMenu(): void
