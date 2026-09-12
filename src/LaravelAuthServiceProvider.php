@@ -29,6 +29,7 @@ class LaravelAuthServiceProvider extends ServiceProvider
         $this->loadViewsFrom(__DIR__.'/../resources/views', 'laravel-auth');
         $this->loadTranslationsFrom(__DIR__.'/../resources/lang', 'laravel-auth');
         $this->loadRoutesFrom_ForFlavor();
+        $this->registerAdminAuthMiddleware();
 
         $this->registerGateIntegration();
         $this->registerPolicies();
@@ -169,6 +170,19 @@ class LaravelAuthServiceProvider extends ServiceProvider
      * render correctly until `composer require duxbo/laravel-blade-kit
      * && php artisan blade-kit:install` is run.
      */
+    /**
+     * Every kit's admin routes (duxbo/laravel-blade-kit, duxbo/laravel-react-kit)
+     * carry ->middleware('admin.auth') — a neutral alias duxbo/laravel-core
+     * registers as a pass-through by default, so an app works before any
+     * auth package is installed. Overriding the exact same alias here is
+     * what actually turns login enforcement on: neither the kit nor this
+     * package needs to know the other exists, only the alias name.
+     */
+    protected function registerAdminAuthMiddleware(): void
+    {
+        $this->app['router']->aliasMiddleware('admin.auth', \Illuminate\Auth\Middleware\Authenticate::class);
+    }
+
     protected function registerAdminMenu(): void
     {
         if (! config('laravel-auth.features.admin_ui') || ! config()->has('admin.menu')) {
