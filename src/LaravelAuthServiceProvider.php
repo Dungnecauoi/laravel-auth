@@ -2,6 +2,7 @@
 
 namespace Duxbo\LaravelAuth;
 
+use Closure;
 use Illuminate\Support\Facades\Event;
 use Illuminate\Support\Facades\Gate;
 use Illuminate\Support\Facades\Route;
@@ -15,6 +16,7 @@ use Duxbo\LaravelAuth\Models\Role;
 use Duxbo\LaravelAuth\Policies\PermissionPolicy;
 use Duxbo\LaravelAuth\Policies\RolePolicy;
 use Duxbo\LaravelAuth\Policies\UserPolicy;
+use LaravelCore\Menu\MenuRegistry;
 
 class LaravelAuthServiceProvider extends ServiceProvider
 {
@@ -35,6 +37,7 @@ class LaravelAuthServiceProvider extends ServiceProvider
         $this->registerPolicies();
         $this->registerAuditLog();
         $this->registerAdminMenu();
+        $this->registerMenuPermissionFilter();
 
         if ($this->app->runningInConsole()) {
             $this->commands([
@@ -162,15 +165,6 @@ class LaravelAuthServiceProvider extends ServiceProvider
     }
 
     /**
-     * The admin views (routes/admin.php) render <x-layouts.admin>/<x-admin.*>
-     * from duxbo/laravel-blade-kit — a peer dependency, not something
-     * this package vendors. Its sidebar is config-driven ('admin.menu'), so
-     * when it's installed we just append our own entries to that array;
-     * when it isn't, this is a no-op and the admin routes simply won't
-     * render correctly until `composer require duxbo/laravel-blade-kit
-     * && php artisan blade-kit:install` is run.
-     */
-    /**
      * Every kit's admin routes (duxbo/laravel-blade-kit, duxbo/laravel-react-kit)
      * carry ->middleware('admin.auth') — a neutral alias duxbo/laravel-core
      * registers as a pass-through by default, so an app works before any
@@ -183,22 +177,66 @@ class LaravelAuthServiceProvider extends ServiceProvider
         $this->app['router']->aliasMiddleware('admin.auth', \Illuminate\Auth\Middleware\Authenticate::class);
     }
 
+    /**
+     * Registered through duxbo/laravel-core's MenuRegistry rather than
+     * mutating config('admin.menu') directly — that older approach only
+     * ever worked for duxbo/laravel-blade-kit (the only kit that reads
+     * that config key) and silently did nothing for any other kit. Every
+     * kit reads MenuRegistry, so this now reaches all of them the same
+     * way, whether or not a UI for it exists yet — see registerMenuPermissionFilter()
+     * for how items carrying a 'permission' key get hidden from users who
+     * lack it.
+     */
     protected function registerAdminMenu(): void
     {
-        if (! config('laravel-auth.features.admin_ui') || ! config()->has('admin.menu')) {
+        if (! config('laravel-auth.features.admin_ui')) {
             return;
         }
 
-        config(['admin.menu' => array_merge(config('admin.menu', []), [
-            [
-                'label' => __('Quản lý tài khoản'),
-                'icon' => 'users',
-                'children' => [
-                    ['label' => __('Người dùng'), 'icon' => 'users', 'route' => 'admin.users.index'],
-                    ['label' => __('Vai trò'), 'icon' => 'settings', 'route' => 'admin.roles.index'],
-                    ['label' => __('Quyền'), 'icon' => 'settings', 'route' => 'admin.permissions.index'],
-                ],
-            ],
-        ])]);
+        $menu = $this->app->make(MenuRegistry::class);
+
+        $menu->register([
+            'key' => 'laravel-auth.accounts',
+            'label' => 'Quản lý tài khoản',
+            'icon' => 'users',
+        ]);
+
+        $menu->register([
+            'label' => 'Người dùng',
+            'icon' => 'users',
+            'route' => 'admin.users.index',
+            'permission' => 'laravel-auth.users.viewAny',
+        ], parentKey: 'laravel-auth.accounts');
+
+        $menu->register([
+            'label' => 'Vai trò',
+            'icon' => 'settings',
+            'route' => 'admin.roles.index',
+            'permission' => 'laravel-auth.roles.viewAny',
+        ], parentKey: 'laravel-auth.accounts');
+
+        $menu->register([
+            'label' => 'Quyền',
+            'icon' => 'settings',
+            'route' => 'admin.permissions.index',
+            'permission' => 'laravel-auth.permissions.viewAny',
+        ], parentKey: 'laravel-auth.accounts');
+    }
+
+    /**
+     * The one filter every 'permission'-carrying menu item — from this
+     * package or any other — is checked against. Registered once here
+     * because this is the only package that knows what a "permission"
+     * means; MenuRegistry itself stays permission-agnostic. Items with no
+     * 'permission' key (most of a typical menu) are left untouched.
+     */
+    protected function registerMenuPermissionFilter(): void
+    {
+        $this->app->make(MenuRegistry::class)->filter(function (array $items, Closure $next) {
+            return $next(array_values(array_filter(
+                $items,
+                fn (array $item) => ! isset($item['permission']) || Gate::allows($item['permission']),
+            )));
+        });
     }
 }

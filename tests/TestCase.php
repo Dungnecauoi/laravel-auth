@@ -10,6 +10,7 @@ use Laravel\Sanctum\SanctumServiceProvider;
 use Duxbo\LaravelAuth\Concerns\HasPermissions;
 use Duxbo\LaravelAuth\Concerns\HasRoles;
 use Duxbo\LaravelAuth\Concerns\TwoFactorAuthenticatable;
+use LaravelCore\CoreServiceProvider;
 use Orchestra\Testbench\TestCase as Orchestra;
 
 abstract class TestCase extends Orchestra
@@ -27,6 +28,7 @@ abstract class TestCase extends Orchestra
     {
         return [
             SanctumServiceProvider::class,
+            CoreServiceProvider::class,
             LaravelAuthServiceProvider::class,
         ];
     }

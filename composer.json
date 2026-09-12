@@ -9,12 +9,23 @@
             "email": "dungduc10a8@gmail.com"
         }
     ],
+    "repositories": [
+        {
+            "type": "vcs",
+            "url": "https://github.com/Dungnecauoi/laravel-core-kit.git"
+        },
+        {
+            "type": "vcs",
+            "url": "https://github.com/Dungnecauoi/laravel-ai-core.git"
+        }
+    ],
     "require": {
         "php": "^8.2",
         "illuminate/support": "^10.0|^11.0|^12.0|^13.0",
         "illuminate/auth": "^10.0|^11.0|^12.0|^13.0",
         "illuminate/database": "^10.0|^11.0|^12.0|^13.0",
-        "laravel/sanctum": "^4.0"
+        "laravel/sanctum": "^4.0",
+        "duxbo/laravel-core": "^0.3.0"
     },
     "suggest": {
         "pragmarx/google2fa": "Required to enable two-factor authentication (features.two_factor).",
@@ -47,5 +58,10 @@
         }
     },
     "minimum-stability": "stable",
-    "prefer-stable": true
+    "prefer-stable": true,
+    "config": {
+        "allow-plugins": {
+            "pestphp/pest-plugin": true
+        }
+    }
 }
