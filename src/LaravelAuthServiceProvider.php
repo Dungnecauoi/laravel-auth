@@ -28,7 +28,6 @@ class LaravelAuthServiceProvider extends ServiceProvider
     public function boot(): void
     {
         $this->loadMigrationsFrom(__DIR__.'/../database/migrations');
-        $this->loadViewsFrom(__DIR__.'/../resources/views', 'laravel-auth');
         $this->loadTranslationsFrom(__DIR__.'/../resources/lang', 'laravel-auth');
         $this->loadRoutesFrom_ForFlavor();
         $this->registerAdminAuthMiddleware();
@@ -55,10 +54,6 @@ class LaravelAuthServiceProvider extends ServiceProvider
             ], 'laravel-auth-migrations');
 
             $this->publishes([
-                __DIR__.'/../resources/views' => resource_path('views/vendor/laravel-auth'),
-            ], 'laravel-auth-views');
-
-            $this->publishes([
                 __DIR__.'/../resources/lang' => $this->app->langPath('vendor/laravel-auth'),
             ], 'laravel-auth-lang');
         }
@@ -66,12 +61,18 @@ class LaravelAuthServiceProvider extends ServiceProvider
 
     /**
      * Which route file(s) get registered depends on config('laravel-auth.frontend'):
-     * "blade"/"api"/"inertia" load only their own file. "hybrid" is shorthand
-     * for "blade,api" (a normal website plus a token API for e.g. a mobile
-     * app) — any other comma-separated combination works too, EXCEPT
-     * "blade,inertia" together: both would register the same page URIs
-     * (login, register, ...) and silently shadow one another, since a
-     * browser page is either server-rendered or an SPA shell, never both.
+     * "api"/"inertia" load their own file. "blade" (the default) loads
+     * nothing from this package at all — the Blade UI (login, register,
+     * 2FA, profile, admin users/roles/permissions) lives entirely in
+     * duxbo/laravel-blade-kit's own routes/auth.php and routes/admin.php,
+     * calling this package's Actions classes directly. This package is
+     * headless: no views, no Blade-flavor routes, only logic. "hybrid" is
+     * shorthand for "blade,api" (a normal website plus a token API for
+     * e.g. a mobile app) — any other comma-separated combination works
+     * too, EXCEPT "blade,inertia" together: both would register the same
+     * page URIs (login, register, ...) and silently shadow one another,
+     * since a browser page is either server-rendered or an SPA shell,
+     * never both.
      */
     protected function loadRoutesFor(): array
     {
@@ -97,7 +98,7 @@ class LaravelAuthServiceProvider extends ServiceProvider
             }
 
             if (! file_exists($file)) {
-                continue;
+                continue; // "web" (blade) has no file here on purpose — see loadRoutesFor()'s docblock
             }
 
             // Deliberately no name/prefix group: routes keep Laravel's own
@@ -116,10 +117,6 @@ class LaravelAuthServiceProvider extends ServiceProvider
             } else {
                 $this->loadRoutesFrom($file);
             }
-        }
-
-        if (config('laravel-auth.features.admin_ui')) {
-            Route::middleware('web')->group(fn () => $this->loadRoutesFrom(__DIR__.'/../routes/admin.php'));
         }
     }
 

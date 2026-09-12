@@ -91,7 +91,6 @@ class UninstallCommand extends Command
     {
         $paths = [
             config_path('laravel-auth.php'),
-            resource_path('views/vendor/laravel-auth'),
             $this->laravel->langPath('vendor/laravel-auth'),
         ];
 

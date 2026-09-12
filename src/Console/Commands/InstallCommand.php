@@ -82,18 +82,17 @@ class InstallCommand extends Command
 
         $this->components->info("Stack set to [{$stack}] (LARAVEL_AUTH_FRONTEND={$frontend} in .env)");
 
-        if ($stack === 'blade') {
-            // "Render the views out" immediately — a Blade stack means real,
-            // editable files under resources/views, not just whatever the
-            // package quietly loads from vendor/ via loadViewsFrom().
-            $this->call('vendor:publish', ['--tag' => 'laravel-auth-views', '--force' => true]);
-
-            if (! class_exists(\LaravelBladeKit\BladeKitServiceProvider::class)) {
-                $this->components->warn(
-                    'The blade stack renders <x-layouts.*>/<x-admin.*> components from duxbo/laravel-blade-kit, '
-                    .'which isn\'t installed. Run: composer require duxbo/laravel-blade-kit && php artisan blade-kit:install'
-                );
-            }
+        if ($stack === 'blade' && ! class_exists(\LaravelBladeKit\BladeKitServiceProvider::class)) {
+            // This package is headless — it has no views of its own. The
+            // Blade UI (login, register, 2FA, profile, admin users/roles/
+            // permissions) lives entirely in duxbo/laravel-blade-kit's own
+            // routes/auth.php and routes/admin.php, calling this package's
+            // Actions classes directly.
+            $this->components->warn(
+                'The blade stack needs duxbo/laravel-blade-kit, which isn\'t installed — it owns the actual UI, '
+                .'this package only provides the Actions/logic it calls into. '
+                .'Run: composer require duxbo/laravel-blade-kit && php artisan blade-kit:install'
+            );
         }
 
         return $stack;
@@ -107,7 +106,7 @@ class InstallCommand extends Command
         ];
 
         $steps[] = match ($stack) {
-            'blade' => 'Blade views were published to resources/views/vendor/laravel-auth — edit them directly.',
+            'blade' => 'UI lives in duxbo/laravel-blade-kit (routes/auth.php, routes/admin.php, resources/views/admin/{auth,profile,users,roles,permissions}) — this package is headless and has no views of its own.',
             'inertia-react', 'inertia-vue' => 'Inertia routes/controllers are wired up, but the '
                 .($stack === 'inertia-react' ? 'React' : 'Vue')
                 .' page components (Auth/Login, Auth/Register, ...) aren\'t scaffolded yet — a starter kit for this stack is coming; build them yourself against routes/inertia.php in the meantime.',
