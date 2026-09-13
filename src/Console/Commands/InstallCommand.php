@@ -3,29 +3,34 @@
 namespace Duxbo\LaravelAuth\Console\Commands;
 
 use Illuminate\Console\Command;
+use Illuminate\Filesystem\Filesystem;
 use Illuminate\Support\Str;
+use Duxbo\LaravelAuth\Console\Commands\Concerns\CopiesFiles;
 use Duxbo\LaravelAuth\Database\Seeders\AdminUserSeeder;
 
 class InstallCommand extends Command
 {
+    use CopiesFiles;
+
     protected $signature = 'laravel-auth:install
                             {--stack= : blade, inertia-react, inertia-vue or headless}
                             {--admin-email= : Seed a first super-admin user}
                             {--admin-password=}
                             {--admin-name=}
-                            {--force : Run non-interactively, accepting defaults / skipping prompts}';
+                            {--force : Run non-interactively, accepting defaults / skipping prompts}
+                            {--views-force : When re-copying view/controller stubs, overwrite files that already exist}';
 
     protected $description = 'Install laravel-auth: pick a UI stack, publish config/views, migrate, sync route permissions, seed the first admin';
 
     protected const STACKS = ['blade', 'inertia-react', 'inertia-vue', 'headless'];
 
-    public function handle(): int
+    public function handle(Filesystem $files): int
     {
         $this->components->info('Installing laravel-auth...');
 
         $this->call('vendor:publish', ['--tag' => 'laravel-auth-config']);
 
-        $stack = $this->selectStack();
+        $stack = $this->selectStack($files);
 
         // Sanctum v4 no longer auto-loads its own migrations (older versions
         // did) — without this, personal_access_tokens never exists and
@@ -53,7 +58,7 @@ class InstallCommand extends Command
      * and inertia-vue wire up the routing/config but still need their page
      * components built (a starter kit for each is planned).
      */
-    protected function selectStack(): string
+    protected function selectStack(Filesystem $files): string
     {
         $stack = $this->option('stack');
 
@@ -82,20 +87,39 @@ class InstallCommand extends Command
 
         $this->components->info("Stack set to [{$stack}] (LARAVEL_AUTH_FRONTEND={$frontend} in .env)");
 
-        if ($stack === 'blade' && ! class_exists(\LaravelBladeKit\BladeKitServiceProvider::class)) {
-            // This package is headless — it has no views of its own. The
-            // Blade UI (login, register, 2FA, profile, admin users/roles/
-            // permissions) lives entirely in duxbo/laravel-blade-kit's own
-            // routes/auth.php and routes/admin.php, calling this package's
-            // Actions classes directly.
-            $this->components->warn(
-                'The blade stack needs duxbo/laravel-blade-kit, which isn\'t installed — it owns the actual UI, '
-                .'this package only provides the Actions/logic it calls into. '
-                .'Run: composer require duxbo/laravel-blade-kit && php artisan blade-kit:install'
-            );
+        if ($stack === 'blade') {
+            if (! class_exists(\LaravelBladeKit\BladeKitServiceProvider::class)) {
+                $this->components->warn(
+                    'The blade stack uses duxbo/laravel-blade-kit\'s components/layout, which isn\'t installed. '
+                    .'Run: composer require duxbo/laravel-blade-kit && php artisan blade-kit:install — then re-run this command.'
+                );
+            } else {
+                $this->copyBladeStubs($files);
+            }
         }
 
         return $stack;
+    }
+
+    /**
+     * This package owns its own UI: the views/controllers/routes below are
+     * copied straight into the app, same as blade-kit copies its own
+     * component stubs. They only *use* blade-kit's components/admin
+     * layout — they don't live inside blade-kit anymore.
+     */
+    protected function copyBladeStubs(Filesystem $files): void
+    {
+        $stubs = dirname(__DIR__, 3).'/stubs/blade';
+        $force = (bool) $this->option('views-force');
+
+        $this->copyDirectory($files, "{$stubs}/app", app_path(), $force);
+        $this->copyDirectory($files, "{$stubs}/resources/views", resource_path('views'), $force);
+        $this->copyFile($files, "{$stubs}/routes/auth.php", base_path('routes/auth.php'), $force);
+        $this->copyFile($files, "{$stubs}/routes/admin-auth.php", base_path('routes/admin-auth.php'), $force);
+
+        $this->components->info(
+            'Blade UI copied. Add to routes/web.php: require __DIR__.\'/auth.php\'; and require __DIR__.\'/admin-auth.php\';'
+        );
     }
 
     protected function printNextSteps(string $stack): void
@@ -106,7 +130,7 @@ class InstallCommand extends Command
         ];
 
         $steps[] = match ($stack) {
-            'blade' => 'UI lives in duxbo/laravel-blade-kit (routes/auth.php, routes/admin.php, resources/views/admin/{auth,profile,users,roles,permissions}) — this package is headless and has no views of its own.',
+            'blade' => 'UI (routes/auth.php, routes/admin-auth.php, resources/views/admin/{auth,profile,users,roles,permissions}) has been copied into your app, using duxbo/laravel-blade-kit\'s components/layout — require both route files from routes/web.php.',
             'inertia-react', 'inertia-vue' => 'Inertia routes/controllers are wired up, but the '
                 .($stack === 'inertia-react' ? 'React' : 'Vue')
                 .' page components (Auth/Login, Auth/Register, ...) aren\'t scaffolded yet — a starter kit for this stack is coming; build them yourself against routes/inertia.php in the meantime.',

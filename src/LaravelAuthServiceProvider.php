@@ -61,12 +61,14 @@ class LaravelAuthServiceProvider extends ServiceProvider
 
     /**
      * Which route file(s) get registered depends on config('laravel-auth.frontend'):
-     * "api"/"inertia" load their own file. "blade" (the default) loads
-     * nothing from this package at all — the Blade UI (login, register,
-     * 2FA, profile, admin users/roles/permissions) lives entirely in
-     * duxbo/laravel-blade-kit's own routes/auth.php and routes/admin.php,
-     * calling this package's Actions classes directly. This package is
-     * headless: no views, no Blade-flavor routes, only logic. "hybrid" is
+     * "api"/"inertia" load their own file from this package. "blade" (the
+     * default) loads nothing from *this package's* routes/ directory — its
+     * routes/views/controllers were instead copied straight into the
+     * consuming app by `laravel-auth:install --stack=blade` (see
+     * InstallCommand::copyBladeStubs()), using duxbo/laravel-blade-kit's
+     * components/layout, not its controllers. Staying `composer require`'d
+     * without ever running that install step keeps this package headless:
+     * no views copied, no Blade-flavor routes, only logic. "hybrid" is
      * shorthand for "blade,api" (a normal website plus a token API for
      * e.g. a mobile app) — any other comma-separated combination works
      * too, EXCEPT "blade,inertia" together: both would register the same

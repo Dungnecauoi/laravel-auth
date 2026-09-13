@@ -11,20 +11,27 @@ php artisan laravel-auth:install
 
 The install command asks which UI stack to use (**blade**, **inertia-react**, **inertia-vue**, or **headless**), publishes the config, runs migrations, syncs permissions discovered from your routes, and optionally seeds a first admin user.
 
-- **blade** publishes real, editable Blade files into `resources/views/vendor/laravel-auth` right away — nothing stays hidden inside `vendor/`.
+- **blade** copies real, editable controllers/views/routes straight into your app (`app/Http/Controllers/{Auth,Admin}`, `resources/views/admin/{auth,profile,users,roles,permissions}`, `routes/auth.php`, `routes/admin-auth.php`) — nothing stays hidden inside `vendor/`. Just `composer require`-ing this package without ever choosing `--stack=blade` keeps it headless: no files copied.
 - **inertia-react** / **inertia-vue** wire up `config('laravel-auth.frontend') = inertia` and the matching routes/controllers; the page components themselves are a separate starter kit still coming, so you'll wire your own `Auth/Login.jsx`/`.vue` etc. against `routes/inertia.php` for now.
 - **headless** is `config('laravel-auth.frontend') = api` — no views at all, just the JSON endpoints.
 
 ### The blade stack needs `duxbo/laravel-blade-kit`
 
-Every Blade view this package ships (`<x-layouts.auth>`, `<x-layouts.admin>`, `<x-admin.input>`, `<x-admin.table>`, ...) is a **peer dependency** on [laravel-blade-kit](https://github.com/Dungnecauoi/laravel-blade-kit) — it doesn't vendor a copy, it just uses the tags, resolved against whatever the host app has installed:
+The Blade views this package copies in (`<x-layouts.auth>`, `<x-layouts.admin>`, `<x-admin.input>`, `<x-admin.table>`, ...) only *use* [laravel-blade-kit](https://github.com/Dungnecauoi/laravel-blade-kit)'s components/layout as a **peer dependency** — it's not vendored, it's resolved against whatever the host app has installed:
 
 ```bash
 composer require duxbo/laravel-blade-kit
 php artisan blade-kit:install
 ```
 
-`laravel-auth:install` warns if it's missing when you pick the blade stack. Without it, `<x-layouts.auth>` etc. simply won't resolve to anything and every auth page will error. If `admin.menu` exists (i.e. Blade Kit is installed), this package also appends a "Người dùng / Vai trò / Quyền" entry to the sidebar automatically — no Blade file to edit for that either.
+`laravel-auth:install --stack=blade` warns and skips the copy if it's missing. Without it, `<x-layouts.auth>` etc. simply won't resolve to anything and every auth page will error. Once installed, add to `routes/web.php`:
+
+```php
+require __DIR__.'/auth.php';
+require __DIR__.'/admin-auth.php';
+```
+
+If `admin.menu` exists (i.e. Blade Kit is installed), this package also appends a "Người dùng / Vai trò / Quyền" entry to the sidebar automatically — no Blade file to edit for that either.
 
 To reverse it: `php artisan laravel-auth:uninstall` rolls back only this package's own migrations (scoped by path, never touches unrelated ones in the same batch) and, with `--purge`, also deletes published config/views/lang.
 
