@@ -14,7 +14,10 @@ class AuthenticatedSessionController
 {
     public function create(): Response
     {
-        return Inertia::render('Auth/Login');
+        return Inertia::render('Auth/Login', [
+            'canRegister' => (bool) config('laravel-auth.features.registration'),
+            'canResetPassword' => (bool) config('laravel-auth.features.password_reset'),
+        ]);
     }
 
     public function store(Request $request, AttemptToAuthenticate $authenticator, EnforceSingleSession $singleSession): RedirectResponse

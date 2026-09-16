@@ -14,6 +14,7 @@ class InstallCommand extends Command
 
     protected $signature = 'laravel-auth:install
                             {--stack= : blade, inertia-react, inertia-vue or headless}
+                            {--ui= : UI library for the inertia-react stack (antd or shadcn) — mirrors react-kit:install --ui}
                             {--admin-email= : Seed a first super-admin user}
                             {--admin-password=}
                             {--admin-name=}
@@ -95,10 +96,41 @@ class InstallCommand extends Command
                 );
             } else {
                 $this->copyBladeStubs($files);
+                $this->setEnvValue('LARAVEL_AUTH_REDIRECT_HOME', '/admin/dashboard');
+            }
+        }
+
+        if ($stack === 'inertia-react') {
+            if (! is_file(resource_path('js/Layouts/AdminLayout.tsx'))) {
+                $this->components->warn(
+                    'The inertia-react stack uses duxbo/laravel-react-kit\'s layouts/components, which aren\'t installed. '
+                    .'Run: composer require duxbo/laravel-react-kit && php artisan react-kit:install — then re-run this command.'
+                );
+            } else {
+                $this->copyInertiaReactStubs($files, $this->selectReactUiLibrary());
+                $this->setEnvValue('LARAVEL_AUTH_REDIRECT_HOME', '/react/dashboard');
             }
         }
 
         return $stack;
+    }
+
+    /**
+     * Mirrors react-kit:install's own --ui prompt exactly — this package
+     * doesn't know which of the two variants react-kit was installed
+     * with (both copy their Layouts to the same resource_path('js/Layouts')
+     * destination, so the filesystem alone can't tell them apart), so it
+     * has to ask again rather than guess.
+     */
+    protected function selectReactUiLibrary(): string
+    {
+        $ui = $this->option('ui');
+
+        if (! $ui && ! $this->option('force')) {
+            $ui = $this->choice('Which UI library is duxbo/laravel-react-kit installed with?', ['antd', 'shadcn'], 0);
+        }
+
+        return in_array($ui, ['antd', 'shadcn'], true) ? $ui : 'antd';
     }
 
     /**
@@ -122,6 +154,27 @@ class InstallCommand extends Command
         );
     }
 
+    /**
+     * Same idea as copyBladeStubs(): this package owns its own UI, the
+     * page components below are copied straight into the app, only
+     * *using* react-kit's Layouts/components — they don't live inside
+     * react-kit. routes/inertia.php itself stays package-owned (not
+     * copied) since it doesn't render anything the app would need to
+     * customize, only the .tsx pages do.
+     */
+    protected function copyInertiaReactStubs(Filesystem $files, string $ui): void
+    {
+        $stubs = dirname(__DIR__, 3)."/stubs/react-{$ui}";
+        $force = (bool) $this->option('views-force');
+
+        $this->copyDirectory($files, "{$stubs}/resources/js", resource_path('js'), $force);
+
+        $this->components->info(
+            "Inertia React UI ({$ui}) copied. Add to routes/web.php: require __DIR__.'/../vendor/duxbo/laravel-auth/routes/inertia.php'; "
+            ."or simply leave it — it's loaded automatically based on config('laravel-auth.frontend')."
+        );
+    }
+
     protected function printNextSteps(string $stack): void
     {
         $steps = [
@@ -131,9 +184,8 @@ class InstallCommand extends Command
 
         $steps[] = match ($stack) {
             'blade' => 'UI (routes/auth.php, routes/admin-auth.php, resources/views/admin/{auth,profile,users,roles,permissions}) has been copied into your app, using duxbo/laravel-blade-kit\'s components/layout — require both route files from routes/web.php.',
-            'inertia-react', 'inertia-vue' => 'Inertia routes/controllers are wired up, but the '
-                .($stack === 'inertia-react' ? 'React' : 'Vue')
-                .' page components (Auth/Login, Auth/Register, ...) aren\'t scaffolded yet — a starter kit for this stack is coming; build them yourself against routes/inertia.php in the meantime.',
+            'inertia-react' => 'UI (resources/js/Pages/Auth/{Login,Register,ForgotPassword,ResetPassword,TwoFactorChallenge,VerifyEmail}.tsx) has been copied into your app, using duxbo/laravel-react-kit\'s Layouts/components — routes/inertia.php loads automatically, nothing to require.',
+            'inertia-vue' => 'Inertia routes/controllers are wired up, but the Vue page components (Auth/Login, Auth/Register, ...) aren\'t scaffolded yet — a starter kit for this stack is coming; build them yourself against routes/inertia.php in the meantime.',
             'headless' => 'No views to worry about — /api/login, /api/register etc. return JSON. Point your SPA/mobile client at them.',
         };
 
