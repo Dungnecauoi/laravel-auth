@@ -13,6 +13,6 @@ class EmailVerificationPromptController
     {
         return $request->user()->hasVerifiedEmail()
             ? redirect()->intended(config('laravel-auth.redirects.home'))
-            : Inertia::render('Auth/VerifyEmail', ['status' => $request->session()->get('status')]);
+            : Inertia::render('Auth/VerifyEmail', ['status' => $request->session()->get('success')]);
     }
 }

@@ -10,9 +10,11 @@ use Inertia\Response;
 
 class PasswordResetLinkController
 {
-    public function create(): Response
+    public function create(Request $request): Response
     {
-        return Inertia::render('Auth/ForgotPassword');
+        return Inertia::render('Auth/ForgotPassword', [
+            'status' => $request->session()->get('success'),
+        ]);
     }
 
     public function store(Request $request): RedirectResponse

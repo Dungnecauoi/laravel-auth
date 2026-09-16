@@ -179,8 +179,13 @@ return [
     |--------------------------------------------------------------------------
     */
     'redirects' => [
-        'home'   => '/dashboard',
-        'login'  => '/login',
+        // Set by `laravel-auth:install` to the actual dashboard route of
+        // whichever kit's stubs it copied ('/admin/dashboard' for blade,
+        // '/react/dashboard' for inertia-react) — '/dashboard' on its own
+        // matches neither kit's real route and 404s post-login/register
+        // if this is ever left unset.
+        'home'   => env('LARAVEL_AUTH_REDIRECT_HOME', '/dashboard'),
+        'login'  => env('LARAVEL_AUTH_REDIRECT_LOGIN', '/login'),
     ],
 
 ];
