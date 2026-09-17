@@ -1,6 +1,8 @@
 # laravel-auth
 
-Full user management, fine-grained per-route permissions, and complete auth flows for Laravel — one backend, three delivery channels: Blade, JSON API, and Inertia.
+Full user management, fine-grained per-route permissions, and complete auth flows for Laravel — one backend, three delivery channels: Blade, Inertia React, and a JSON API.
+
+Every screen — login/register/password-reset/2FA flows, profile/security (password change, 2FA setup with a real QR code, session management, account deletion), and admin users/roles/permissions CRUD — is a genuine, complete port across **both** UI-owning stacks (Blade and Inertia React), not a stripped-down secondary option.
 
 ## Install
 
@@ -11,27 +13,37 @@ php artisan laravel-auth:install
 
 The install command asks which UI stack to use (**blade**, **inertia-react**, **inertia-vue**, or **headless**), publishes the config, runs migrations, syncs permissions discovered from your routes, and optionally seeds a first admin user.
 
-- **blade** copies real, editable controllers/views/routes straight into your app (`app/Http/Controllers/{Auth,Admin}`, `resources/views/admin/{auth,profile,users,roles,permissions}`, `routes/auth.php`, `routes/admin-auth.php`) — nothing stays hidden inside `vendor/`. Just `composer require`-ing this package without ever choosing `--stack=blade` keeps it headless: no files copied.
-- **inertia-react** / **inertia-vue** wire up `config('laravel-auth.frontend') = inertia` and the matching routes/controllers; the page components themselves are a separate starter kit still coming, so you'll wire your own `Auth/Login.jsx`/`.vue` etc. against `routes/inertia.php` for now.
+- **blade** copies real, editable controllers/views/routes straight into your app (`app/Http/Controllers/{Auth,Admin}`, `resources/views/admin/{auth,profile,users,roles,permissions}`, `routes/auth.php`, `routes/admin-auth.php`) — nothing stays hidden inside `vendor/`.
+- **inertia-react** additionally asks which UI library `duxbo/laravel-react-kit` was installed with (`--ui=antd` or `--ui=shadcn` — it can't tell from the filesystem alone, both variants copy their layouts to the same destination) and copies the matching `.tsx` pages into `resources/js/Pages/{Auth,Profile,Admin}` — same "real files, not vendored" approach as Blade.
+- **inertia-vue** wires up `config('laravel-auth.frontend') = inertia` and the matching routes/controllers, but the Vue page components themselves aren't scaffolded yet — a starter kit for this stack is coming; build them yourself against `routes/inertia.php` in the meantime.
 - **headless** is `config('laravel-auth.frontend') = api` — no views at all, just the JSON endpoints.
 
-### The blade stack needs `duxbo/laravel-blade-kit`
+Just `composer require`-ing this package without ever running `laravel-auth:install` with a UI stack keeps it fully headless: no files copied, no views, just the Actions/logic every channel calls into.
 
-The Blade views this package copies in (`<x-layouts.auth>`, `<x-layouts.admin>`, `<x-admin.input>`, `<x-admin.table>`, ...) only *use* [laravel-blade-kit](https://github.com/Dungnecauoi/laravel-blade-kit)'s components/layout as a **peer dependency** — it's not vendored, it's resolved against whatever the host app has installed:
+### The blade stack needs `duxbo/laravel-blade-kit`; inertia-react needs `duxbo/laravel-react-kit`
+
+Neither UI-owning stack vendors its own component library — both only *use* the matching kit's components/layout as a **peer dependency**, resolved against whatever the host app has installed:
 
 ```bash
+# blade
 composer require duxbo/laravel-blade-kit
 php artisan blade-kit:install
+
+# inertia-react
+composer require duxbo/laravel-react-kit
+php artisan react-kit:install --ui=antd   # or --ui=shadcn
 ```
 
-`laravel-auth:install --stack=blade` warns and skips the copy if it's missing. Without it, `<x-layouts.auth>` etc. simply won't resolve to anything and every auth page will error. Once installed, add to `routes/web.php`:
+`laravel-auth:install` warns and skips the copy if the matching kit isn't installed — without it, the Blade `<x-layouts.auth>` tags or the React `@/Layouts/AdminLayout` import simply won't resolve to anything and every page will error. Once installed:
 
 ```php
+// routes/web.php, blade stack only — inertia-react's routes/inertia.php loads
+// automatically based on config('laravel-auth.frontend'), nothing to require
 require __DIR__.'/auth.php';
 require __DIR__.'/admin-auth.php';
 ```
 
-If `admin.menu` exists (i.e. Blade Kit is installed), this package also appends a "Người dùng / Vai trò / Quyền" entry to the sidebar automatically — no Blade file to edit for that either.
+If `admin.menu` exists (i.e. the kit is installed), this package also appends a "Người dùng / Vai trò / Quyền" entry to the sidebar automatically — no file to edit for that either. Set `LARAVEL_AUTH_ADMIN_UI=false` to turn that UI off entirely (menu items and routes both), regardless of which stack renders the rest.
 
 To reverse it: `php artisan laravel-auth:uninstall` rolls back only this package's own migrations (scoped by path, never touches unrelated ones in the same batch) and, with `--purge`, also deletes published config/views/lang.
 
