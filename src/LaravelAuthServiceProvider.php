@@ -119,6 +119,14 @@ class LaravelAuthServiceProvider extends ServiceProvider
             } else {
                 $this->loadRoutesFrom($file);
             }
+
+            // routes/admin-auth.php's Inertia twin — same admin_ui gate as
+            // registerAdminMenu() (no menu items, no routes to reach them),
+            // package-owned rather than copied since it renders Inertia
+            // pages, not Blade views the app might want to edit.
+            if ($flavor === 'inertia' && config('laravel-auth.features.admin_ui')) {
+                Route::middleware('web')->group(fn () => $this->loadRoutesFrom(__DIR__.'/../routes/inertia-admin.php'));
+            }
         }
     }
 

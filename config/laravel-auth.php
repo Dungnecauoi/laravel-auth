@@ -85,9 +85,11 @@ return [
         'session_management'  => env('LARAVEL_AUTH_SESSIONS', true),
         'impersonation'       => env('LARAVEL_AUTH_IMPERSONATION', false),
 
-        // The /admin Users/Roles/Permissions management UI. Always Blade,
-        // regardless of `frontend` — a staff back-office and an API/Inertia
-        // frontend for end users aren't mutually exclusive.
+        // The /admin Users/Roles/Permissions management UI — rendered in
+        // whichever stack `frontend` resolves to (Blade or Inertia React
+        // both ship it; each is a real port of the same screens, not a
+        // stripped-down version). Toggle this off if you don't want that
+        // UI reachable at all, regardless of stack.
         'admin_ui'            => env('LARAVEL_AUTH_ADMIN_UI', true),
 
         // Only one active login per user at a time, across every channel:
