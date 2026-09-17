@@ -4,8 +4,12 @@ use Illuminate\Support\Facades\Route;
 use Duxbo\LaravelAuth\Http\Controllers\Inertia\AuthenticatedSessionController;
 use Duxbo\LaravelAuth\Http\Controllers\Inertia\EmailVerificationPromptController;
 use Duxbo\LaravelAuth\Http\Controllers\Inertia\NewPasswordController;
+use Duxbo\LaravelAuth\Http\Controllers\Inertia\PasswordController;
 use Duxbo\LaravelAuth\Http\Controllers\Inertia\PasswordResetLinkController;
+use Duxbo\LaravelAuth\Http\Controllers\Inertia\ProfileController;
 use Duxbo\LaravelAuth\Http\Controllers\Inertia\RegisteredUserController;
+use Duxbo\LaravelAuth\Http\Controllers\Inertia\SessionController;
+use Duxbo\LaravelAuth\Http\Controllers\Inertia\TwoFactorAuthenticationController;
 use Duxbo\LaravelAuth\Http\Controllers\Inertia\TwoFactorChallengeController;
 use Duxbo\LaravelAuth\Http\Controllers\Web\EmailVerificationNotificationController;
 use Duxbo\LaravelAuth\Http\Controllers\Web\VerifyEmailController;
@@ -53,5 +57,22 @@ Route::middleware('auth')->group(function () {
         Route::post('email/verification-notification', [EmailVerificationNotificationController::class, 'store'])
             ->middleware('throttle:6,1')
             ->name('verification.send');
+    }
+
+    Route::get('profile', [ProfileController::class, 'edit'])->name('profile.edit');
+    Route::patch('profile', [ProfileController::class, 'update'])->name('profile.update');
+    Route::delete('profile', [ProfileController::class, 'destroy'])->name('profile.destroy');
+    Route::put('password', [PasswordController::class, 'update'])->name('password.update');
+
+    if (config('laravel-auth.features.session_management')) {
+        Route::delete('sessions/other', [SessionController::class, 'destroyOthers'])->name('sessions.destroy-others');
+        Route::delete('sessions/{id}', [SessionController::class, 'destroy'])->name('sessions.destroy');
+    }
+
+    if (config('laravel-auth.features.two_factor')) {
+        Route::post('user/two-factor-authentication', [TwoFactorAuthenticationController::class, 'store'])->name('two-factor.enable');
+        Route::post('user/confirmed-two-factor-authentication', [TwoFactorAuthenticationController::class, 'confirm'])->name('two-factor.confirm');
+        Route::delete('user/two-factor-authentication', [TwoFactorAuthenticationController::class, 'destroy'])->name('two-factor.disable');
+        Route::post('user/two-factor-recovery-codes', [TwoFactorAuthenticationController::class, 'regenerateRecoveryCodes'])->name('two-factor.recovery-codes');
     }
 });
